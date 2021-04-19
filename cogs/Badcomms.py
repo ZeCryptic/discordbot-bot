@@ -59,14 +59,13 @@ class Badcomms(commands.Cog):
                     await ctx.send(f"{person.lower().capitalize()} now has {remarks} remarks")
                 else:
                     myEmbed = discord.Embed(title=f"Badcomms from: {person.lower().capitalize()}", color=0x00ff00)
-                    print("hei")
                     x = 0
                     for i in self.comms[person.lower().capitalize()]:
-                        x = x + 1
                         myEmbed.add_field(name=f"Badcomms nr: {x}", value=i, inline=False)
+                        x = x + 1
                     await ctx.send(embed=myEmbed)
 
-            elif person.lower().capitalize() == "Vote":
+            elif person.lower() == "vote":
                 myEmbed = discord.Embed(title="Badcommers", color=0x00ff00)
                 x = 0
                 for person in self.comms:
@@ -92,6 +91,15 @@ class Badcomms(commands.Cog):
 
                 for emoji in emojis[:x]:
                     await message.add_reaction(emoji)
+
+            elif person.lower() == "del":
+                text_list = arg.split(" ")
+                name = text_list[0].lower().capitalize()
+                if name in self.cNames:
+                    index = int(text_list[1])
+                    await ctx.send(
+                        f"Removing remark from: {name} '{self.comms[name].pop(index)}'")
+                    self.save()
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
