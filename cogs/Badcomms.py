@@ -2,57 +2,63 @@ import json
 import discord
 import os.path
 from discord.ext import commands
+from pathlib import Path
 
-if os.path.isfile("cogs/Badcomms_data/comms.json"):
-    with open("cogs/Badcomms_data/comms.json", encoding='utf-8') as f:
-        comms = json.load(f)
-else:
-    comms = {
-        "Victor": [],
-        "Simen": [],
-        "Leander": [],
-        "Lade": [],
-        "Alek": [],
-        "Finni": [],
-        "H\u00e5kon": [],
-        "Sigurd": [],
-        "Thomas": []}
-    with open("cogs/Badcomms_data/comms.json", "x", encoding='utf-8') as f:
-        json.dump(comms, f)
-
-cNames = []
-for i in comms.keys():
-    cNames.append(i)
 
 # noinspection PyGlobalUndefined
 class Badcomms(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.comms = None
+        self.cNames = []
+        self.comms_data_path = Path("cogs/Badcomms_data/comms.json")
+
+    def load_comms(self):
+        if os.path.isfile(self.comms_data_path):
+            with open(self.comms_data_path, encoding='utf-8') as f:
+                self.comms = json.load(f)
+        else:
+            comms = {
+                "Victor": [],
+                "Simen": [],
+                "Leander": [],
+                "Lade": [],
+                "Alek": [],
+                "Finni": [],
+                "H\u00e5kon": [],
+                "Sigurd": [],
+                "Thomas": []}
+            with open(self.comms_data_path, "x", encoding='utf-8') as f:
+                json.dump(self.comms, f)
+
+        for i in self.comms.keys():
+            self.cNames.append(i)
+
+    def save(self):
+        with open(self.comms_data_path, "w", encoding='utf-8') as f:
+            json.dump(self.comms, f, indent=6)
 
     @commands.command(name='badcomms', help="elp'")
     async def bad_comms(self, ctx, person=None, *, arg=None):
-        def save():
-            with open("cogs/Badcomms_data/comms.json", "w", encoding='utf-8') as f:
-                json.dump(comms, f, indent=6)
 
         def count_remarks(person):
             x = 0
-            for i in comms[person]:
+            for i in self.comms[person]:
                 x = x + 1
             return x
 
         if person != None:
-            if person.lower().capitalize() in cNames:
-                comms[person.lower().capitalize()].append(arg)
-                save()
+            if person.lower().capitalize() in self.cNames:
+                self.comms[person.lower().capitalize()].append(arg)
+                self.save()
                 remarks = count_remarks(person.lower().capitalize())
                 await ctx.send(f"{person.lower().capitalize()} now has {remarks} remarks")
 
             elif person.lower().capitalize() == "Vote":
                 myEmbed = discord.Embed(title="Badcommers", color=0x00ff00)
                 x = 0
-                for person in comms:
+                for person in self.comms:
                     z = count_remarks(person)
                     myEmbed.add_field(name=f"{x} {person}", value=f"Number of badcomms: {z}", inline=False)
                     x = x + 1
@@ -61,7 +67,8 @@ class Badcomms(commands.Cog):
                 global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, votes, actualMessage
                 actualMessage = message
                 voteList = []
-                votes = {"vote0": 0, "vote1": 0, "vote2": 0, "vote3": 0, "vote4": 0, "vote5": 0, "vote6": 0, "vote7": 0, "vote8": 0}
+                votes = {"vote0": 0, "vote1": 0, "vote2": 0, "vote3": 0, "vote4": 0, "vote5": 0, "vote6": 0, "vote7": 0,
+                         "vote8": 0}
                 vote0 = 0
                 vote1 = 0
                 vote2 = 0
@@ -74,7 +81,6 @@ class Badcomms(commands.Cog):
 
                 for emoji in emojis[:x]:
                     await message.add_reaction(emoji)
-
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
@@ -136,4 +142,4 @@ class Badcomms(commands.Cog):
                             x = i
                             who = y
                     index = int(who[4])
-                    await ch.send(f"{cNames[index]} has the most votes({x}) for bad comms")
+                    await ch.send(f"{self.cNames[index]} has the most votes({x}) for bad comms")
