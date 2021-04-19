@@ -2,6 +2,7 @@ import discord
 import os
 from dotenv import load_dotenv
 from discord.ext import commands
+from cogs.template_cog import TemplateCog
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -10,6 +11,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 def main():
     intents = discord.Intents().all()
     bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
+    bot.add_cog(TemplateCog(bot))
 
     @bot.command()
     async def test(ctx):
