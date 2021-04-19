@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from discord.ext import commands
 from cogs.EmojiStats import EmojiStats
 from cogs.template_cog import TemplateCog
+from cogs.Quotes import Quotes
 
 
 load_dotenv()
@@ -15,6 +16,7 @@ def main():
     bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
     bot.add_cog(TemplateCog(bot))
     bot.add_cog(EmojiStats(bot))
+    bot.add_cog(Quotes(bot))
 
     @bot.command()
     async def test(ctx):
