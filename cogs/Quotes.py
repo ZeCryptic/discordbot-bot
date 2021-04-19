@@ -64,12 +64,12 @@ class Quotes(commands.Cog):
             command = text_list[0].lower()
 
 
-            if command in self.names:
+            if command.capitalize() in self.names:
                 for i in text_list[1:]:
                     text = text + " " + i
 
-                self.quotes[text_list[1].lower().capitalize()].append(text)
-                await ctx.send(f"Quote from: {text_list[1].lower().capitalize()} '{text}' added")
+                self.quotes[command.capitalize()].append(text)
+                await ctx.send(f"Quote from: {command.capitalize()} '{text}' added")
                 self.save()
 
             elif command == "all":  # Runs if the all command is used
