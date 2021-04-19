@@ -13,6 +13,7 @@ class Badcomms(commands.Cog):
         self.comms = None
         self.cNames = []
         self.comms_data_path = Path("cogs/Badcomms_data/comms.json")
+        self.load_comms()
 
     def load_comms(self):
         if os.path.isfile(self.comms_data_path):
