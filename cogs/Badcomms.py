@@ -9,6 +9,7 @@ cNames = []
 for i in comms.keys():
     cNames.append(i)
 
+
 class Badcomms(commands.Cog):
 
     def __init__(self, bot):
@@ -45,8 +46,8 @@ class Badcomms(commands.Cog):
                 for emoji in emojis[:x]:
                     await message.add_reaction(emoji)
 
-    @commands.event
-    async def on_reaction_add(reaction, user):
+    @commands.Cog.listener()
+    async def on_reaction_add(self, reaction, user):
         user_list = []
         emoji = reaction.emoji
         print(user)
