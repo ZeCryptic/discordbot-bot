@@ -3,6 +3,13 @@ import json
 import discord
 from discord.ext import commands
 
+with open("cogs/Quotes_data/quote.json", encoding='utf-8') as f:
+    quotes = json.load(f)
+
+names = []
+for i in quotes.keys():
+    names.append(i)
+
 
 class Quotes(commands.Cog):
 
@@ -12,7 +19,7 @@ class Quotes(commands.Cog):
     @commands.command(name='quote', help="Type '!quote help'")
     async def quote(self, ctx, *, arg="None"):
         def save():
-            with open("quote.json", "w", encoding='utf-8') as f:
+            with open("cogs/Quotes_data/quote.json", "w", encoding='utf-8') as f:
                 json.dump(quotes, f)
 
         if arg == "None":  # If the argument is the basic "None", it goes straight to random quote
@@ -26,7 +33,7 @@ class Quotes(commands.Cog):
 
             await ctx.send(response)
 
-        elif arg.lower().capitalize() in names: # Checks if the text is a name, if it is it sends a random quote from that name
+        elif arg.lower().capitalize() in names:  # Checks if the text is a name, if it is it sends a random quote from that name
             response = f"Quote from: {arg.lower().capitalize()} '{random.choice(quotes[arg.capitalize()])}'"
 
             await ctx.send(response)
