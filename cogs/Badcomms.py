@@ -20,7 +20,7 @@ class Badcomms(commands.Cog):
             with open(self.comms_data_path, encoding='utf-8') as f:
                 self.comms = json.load(f)
         else:
-            comms = {
+            self.comms = {
                 "Victor": [],
                 "Simen": [],
                 "Leander": [],
@@ -40,27 +40,37 @@ class Badcomms(commands.Cog):
         with open(self.comms_data_path, "w", encoding='utf-8') as f:
             json.dump(self.comms, f, indent=6)
 
+    def count_remarks(self, person):
+        x = 0
+        for i in self.comms[person]:
+            x = x + 1
+        return x
+
     @commands.command(name='badcomms', help="elp'")
     async def bad_comms(self, ctx, person=None, *, arg=None):
 
-        def count_remarks(person):
-            x = 0
-            for i in self.comms[person]:
-                x = x + 1
-            return x
+        if person is not None:
 
-        if person != None:
             if person.lower().capitalize() in self.cNames:
-                self.comms[person.lower().capitalize()].append(arg)
-                self.save()
-                remarks = count_remarks(person.lower().capitalize())
-                await ctx.send(f"{person.lower().capitalize()} now has {remarks} remarks")
+                if arg is not None:
+                    self.comms[person.lower().capitalize()].append(arg)
+                    self.save()
+                    remarks = self.count_remarks(person.lower().capitalize())
+                    await ctx.send(f"{person.lower().capitalize()} now has {remarks} remarks")
+                else:
+                    myEmbed = discord.Embed(title=f"Badcomms from: {person.lower().capitalize()}", color=0x00ff00)
+                    print("hei")
+                    x = 0
+                    for i in self.comms[person.lower().capitalize()]:
+                        x = x + 1
+                        myEmbed.add_field(name=f"Badcomms nr: {x}", value=i, inline=False)
+                    await ctx.send(embed=myEmbed)
 
             elif person.lower().capitalize() == "Vote":
                 myEmbed = discord.Embed(title="Badcommers", color=0x00ff00)
                 x = 0
                 for person in self.comms:
-                    z = count_remarks(person)
+                    z = self.count_remarks(person)
                     myEmbed.add_field(name=f"{x} {person}", value=f"Number of badcomms: {z}", inline=False)
                     x = x + 1
                 message = await ctx.send(embed=myEmbed)
