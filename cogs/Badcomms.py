@@ -33,12 +33,17 @@ class Badcomms(commands.Cog):
             with open(self.comms_data_path, "x", encoding='utf-8') as f:
                 json.dump(self.comms, f)
 
+        self.cNames = []
         for i in self.comms.keys():
             self.cNames.append(i)
 
     def save(self):
         with open(self.comms_data_path, "w", encoding='utf-8') as f:
             json.dump(self.comms, f, indent=6)
+
+        self.cNames = []
+        for i in self.comms.keys():
+            self.cNames.append(i)
 
     def count_remarks(self, person):
         x = 0
@@ -65,33 +70,6 @@ class Badcomms(commands.Cog):
                         x = x + 1
                     await ctx.send(embed=myEmbed)
 
-            elif person.lower() == "vote":
-                myEmbed = discord.Embed(title="Badcommers", color=0x00ff00)
-                x = 0
-                for person in self.comms:
-                    z = self.count_remarks(person)
-                    myEmbed.add_field(name=f"{x} {person}", value=f"Number of badcomms: {z}", inline=False)
-                    x = x + 1
-                message = await ctx.send(embed=myEmbed)
-                emojis = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
-                global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, votes, actualMessage
-                actualMessage = message
-                voteList = []
-                votes = {"vote0": 0, "vote1": 0, "vote2": 0, "vote3": 0, "vote4": 0, "vote5": 0, "vote6": 0, "vote7": 0,
-                         "vote8": 0}
-                vote0 = 0
-                vote1 = 0
-                vote2 = 0
-                vote3 = 0
-                vote4 = 0
-                vote5 = 0
-                vote6 = 0
-                vote7 = 0
-                vote8 = 0
-
-                for emoji in emojis[:x]:
-                    await message.add_reaction(emoji)
-
             elif person.lower() == "del":
                 text_list = arg.split(" ")
                 name = text_list[0].lower().capitalize()
@@ -103,6 +81,68 @@ class Badcomms(commands.Cog):
                         self.save()
                     else:
                         await ctx.send("That remark does not exist")
+
+            elif person.lower() == "add":
+                text_list = arg.split(" ")
+                name = text_list[0].lower().capitalize()
+                if name not in self.cNames:
+                    self.comms[name] = []
+                    await ctx.send(f"{name} is now added")
+                    self.save()
+
+
+            elif person.lower() == "delete":
+                text_list = arg.split(" ")
+                name = text_list[0].lower().capitalize()
+                if name in self.cNames:
+                    await ctx.send(f"{name} is now deleted")
+                    self.comms.pop(name)
+                    self.save()
+
+            elif person.lower() == "leaderboard":
+                myEmbed = discord.Embed(title="Badcommers", color=0x00ff00)
+                x = 0
+                for person in self.comms:
+                    z = self.count_remarks(person)
+                    myEmbed.add_field(name=f"{x} {person}", value=f"Number of badcomms: {z}", inline=False)
+                    x = x + 1
+                if arg is not None:
+                    text_list = arg.split(" ")
+                    name = text_list[0].lower().capitalize()
+                    if name == "Vote":
+                        message = await ctx.send(embed=myEmbed)
+                        emojis = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
+                        global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, votes, actualMessage
+                        actualMessage = message
+                        voteList = []
+                        votes = {"vote0": 0, "vote1": 0, "vote2": 0, "vote3": 0, "vote4": 0, "vote5": 0, "vote6": 0,
+                                 "vote7": 0,
+                                 "vote8": 0}
+                        vote0 = 0
+                        vote1 = 0
+                        vote2 = 0
+                        vote3 = 0
+                        vote4 = 0
+                        vote5 = 0
+                        vote6 = 0
+                        vote7 = 0
+                        vote8 = 0
+
+                        for emoji in emojis[:x]:
+                            await message.add_reaction(emoji)
+                else:
+                    await ctx.send(embed=myEmbed)
+
+            elif person.lower() == "help":
+                myEmbed = discord.Embed(title="Help", color=0x00ff00)
+                myEmbed.add_field(name="Add remarks", value="To add remarks type '!badcomms person remark'", inline=False)
+                myEmbed.add_field(name="Delete remarks", value="To delete remark type '!badcomms del person number'(The number is correlating to that persons list of remarks)", inline=False)
+                myEmbed.add_field(name="See remarks", value="To add remarks type '!badcomms person'", inline=False)
+                myEmbed.add_field(name="See leaderboard", value="To see leaderboard type '!badcomms leaderboard'", inline=False)
+                myEmbed.add_field(name="Vote badcomms", value="To vote on badcomms type '!badcomms leaderboard vote'", inline=False)
+                myEmbed.add_field(name="Add person", value="To add person type '!badcomms add person'", inline=False)
+                myEmbed.add_field(name="Delete person", value="To delete person type '!badcomms delete person'", inline=False)
+                await ctx.send(embed=myEmbed)
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
