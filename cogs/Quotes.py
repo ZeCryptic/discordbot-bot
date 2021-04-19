@@ -1,10 +1,16 @@
+import os.path
 import random
 import json
 import discord
 from discord.ext import commands
 
-with open("cogs/Quotes_data/quote.json", encoding='utf-8') as f:
-    quotes = json.load(f)
+if os.path.isfile("cogs/Quotes_data/quote.json"):
+    with open("cogs/Quotes_data/quote.json", encoding='utf-8') as f:
+        quotes = json.load(f)
+else:
+    quotes = {"Nei": ["hei"]}
+    with open("cogs/Quotes_data/quote.json", "x", encoding='utf-8') as f:
+        json.dump(quotes, f)
 
 names = []
 for i in quotes.keys():
@@ -19,7 +25,7 @@ class Quotes(commands.Cog):
     @commands.command(name='quote', help="Type '!quote help'")
     async def quote(self, ctx, *, arg="None"):
         def save():
-            with open("cogs/Quotes_data/quote.json", "w", encoding='utf-8') as f:
+            with open("cogs/Quotes_data/quotes.json", "w", encoding='utf-8') as f:
                 json.dump(quotes, f)
 
         if arg == "None":  # If the argument is the basic "None", it goes straight to random quote
