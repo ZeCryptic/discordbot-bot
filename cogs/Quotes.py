@@ -76,11 +76,15 @@ class Quotes(commands.Cog):
                     await ctx.send(embed=myEmbed)
 
             elif text_list[0].lower() == "del":  # Runs if the delete command is used
-                if text_list[1].lower().capitalize() in self.names:
+                lname = text_list[1].lower().capitalize()
+                if lname in self.names:
                     index = int(text_list[2])
-                    await ctx.send(
-                        f"Removing quote from: {text_list[1].lower().capitalize()} '{self.quotes[text_list[1].lower().capitalize()].pop(index)}'")
-                    self.save()
+                    if self.quotes[lname] != [] and len(self.quotes[lname])-1 >= index:
+                        await ctx.send(
+                            f"Removing quote from: {lname} '{self.quotes[lname].pop(index)}'")
+                        self.save()
+                    else:
+                        await ctx.send("That quote does not exist")
 
             elif text_list[0].lower() == "help":  # Runs if the help command is used
                 myEmbed = discord.Embed(title="Help", color=0x00ff00)

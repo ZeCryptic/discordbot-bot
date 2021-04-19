@@ -97,9 +97,12 @@ class Badcomms(commands.Cog):
                 name = text_list[0].lower().capitalize()
                 if name in self.cNames:
                     index = int(text_list[1])
-                    await ctx.send(
-                        f"Removing remark from: {name} '{self.comms[name].pop(index)}'")
-                    self.save()
+                    if self.comms[name] != [] and len(self.comms[name])-1 >= index:
+                        await ctx.send(
+                            f"Removing remark from: {name} '{self.comms[name].pop(index)}'")
+                        self.save()
+                    else:
+                        await ctx.send("That remark does not exist")
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
