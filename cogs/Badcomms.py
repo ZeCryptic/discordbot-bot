@@ -5,7 +5,7 @@ from discord.ext import commands
 
 if os.path.isfile("cogs/Badcomms_data/comms.json"):
     with open("cogs/Badcomms_data/comms.json", encoding='utf-8') as f:
-        quotes = json.load(f)
+        comms = json.load(f)
 else:
     comms = {
         "Victor": [],
