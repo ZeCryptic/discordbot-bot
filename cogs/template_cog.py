@@ -1,11 +1,11 @@
 from discord.ext import commands
 
 
-class TemplateCog(commands.cog):
+class TemplateCog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command
+    @commands.command()
     async def template(self, ctx):
         await ctx.send('this is a template command :))')
