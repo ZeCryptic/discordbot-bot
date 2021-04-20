@@ -68,7 +68,7 @@ class Badcomms(commands.Cog):
                         name = text_list[0].lower().capitalize()
                         if name in self.cNames:
                             index = int(text_list[1])
-                            if self.comms[name] != [] and len(self.comms[name])-1 >= index:
+                            if self.comms[name] != [] and len(self.comms[name]) - 1 >= index:
                                 await ctx.send(
                                     f"Removing remark from: {name} '{self.comms[name].pop(index)}'")
                                 self.save()
@@ -133,14 +133,22 @@ class Badcomms(commands.Cog):
             elif person.lower() == "help":
                 if arg is None:
                     myEmbed = discord.Embed(title="Help", color=0x00ff00)
-                    myEmbed.add_field(name="Add remarks", value="To add remarks type '!badcomms person remark'", inline=False)
-                    myEmbed.add_field(name="Delete remarks", value="To delete remark type '!badcomms del person number'(The number is correlating to that persons list of remarks)", inline=False)
+                    myEmbed.add_field(name="Add remarks", value="To add remarks type '!badcomms person remark'",
+                                      inline=False)
+                    myEmbed.add_field(name="Delete remarks",
+                                      value="To delete remark type '!badcomms del person number'(The number is correlating to that persons list of remarks)",
+                                      inline=False)
                     myEmbed.add_field(name="See remarks", value="To add remarks type '!badcomms person'", inline=False)
-                    myEmbed.add_field(name="See leaderboard", value="To see leaderboard type '!badcomms leaderboard'", inline=False)
-                    myEmbed.add_field(name="Vote badcomms", value="To vote on badcomms type '!badcomms leaderboard vote'", inline=False)
-                    myEmbed.add_field(name="Add person", value="To add person type '!badcomms add person'", inline=False)
-                    myEmbed.add_field(name="Delete person", value="To delete person type '!badcomms delete person'", inline=False)
+                    myEmbed.add_field(name="See leaderboard", value="To see leaderboard type '!badcomms leaderboard'",
+                                      inline=False)
+                    myEmbed.add_field(name="Vote badcomms",
+                                      value="To vote on badcomms type '!badcomms leaderboard vote'", inline=False)
+                    myEmbed.add_field(name="Add person", value="To add person type '!badcomms add person'",
+                                      inline=False)
+                    myEmbed.add_field(name="Delete person", value="To delete person type '!badcomms delete person'",
+                                      inline=False)
                     await ctx.send(embed=myEmbed)
+        await ctx.message.delete()
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
