@@ -20,16 +20,7 @@ class Badcomms(commands.Cog):
             with open(self.comms_data_path, encoding='utf-8') as f:
                 self.comms = json.load(f)
         else:
-            self.comms = {
-                "Victor": [],
-                "Simen": [],
-                "Leander": [],
-                "Lade": [],
-                "Alek": [],
-                "Finni": [],
-                "H\u00e5kon": [],
-                "Sigurd": [],
-                "Thomas": []}
+            self.comms = {"Delete": ["Me"]}
             with open(self.comms_data_path, "x", encoding='utf-8') as f:
                 json.dump(self.comms, f)
 
@@ -71,33 +62,38 @@ class Badcomms(commands.Cog):
                     await ctx.send(embed=myEmbed)
 
             elif person.lower() == "del":
-                text_list = arg.split(" ")
-                name = text_list[0].lower().capitalize()
-                if name in self.cNames:
-                    index = int(text_list[1])
-                    if self.comms[name] != [] and len(self.comms[name])-1 >= index:
-                        await ctx.send(
-                            f"Removing remark from: {name} '{self.comms[name].pop(index)}'")
-                        self.save()
-                    else:
-                        await ctx.send("That remark does not exist")
+                if arg is not None:
+                    text_list = arg.split(" ")
+                    if len(text_list) == 2:
+                        name = text_list[0].lower().capitalize()
+                        if name in self.cNames:
+                            index = int(text_list[1])
+                            if self.comms[name] != [] and len(self.comms[name])-1 >= index:
+                                await ctx.send(
+                                    f"Removing remark from: {name} '{self.comms[name].pop(index)}'")
+                                self.save()
+                            else:
+                                await ctx.send("That remark does not exist")
 
             elif person.lower() == "add":
-                text_list = arg.split(" ")
-                name = text_list[0].lower().capitalize()
-                if name not in self.cNames:
-                    self.comms[name] = []
-                    await ctx.send(f"{name} is now added")
-                    self.save()
-
+                if arg is not None:
+                    text_list = arg.split(" ")
+                    if len(text_list) == 1:
+                        name = text_list[0].lower().capitalize()
+                        if name not in self.cNames:
+                            self.comms[name] = []
+                            await ctx.send(f"{name} is now added")
+                            self.save()
 
             elif person.lower() == "delete":
-                text_list = arg.split(" ")
-                name = text_list[0].lower().capitalize()
-                if name in self.cNames:
-                    await ctx.send(f"{name} is now deleted")
-                    self.comms.pop(name)
-                    self.save()
+                if arg is not None:
+                    text_list = arg.split(" ")
+                    if len(text_list) == 1:
+                        name = text_list[0].lower().capitalize()
+                        if name in self.cNames:
+                            await ctx.send(f"{name} is now deleted")
+                            self.comms.pop(name)
+                            self.save()
 
             elif person.lower() == "leaderboard":
                 myEmbed = discord.Embed(title="Badcommers", color=0x00ff00)
@@ -108,41 +104,43 @@ class Badcomms(commands.Cog):
                     x = x + 1
                 if arg is not None:
                     text_list = arg.split(" ")
-                    name = text_list[0].lower().capitalize()
-                    if name == "Vote":
-                        message = await ctx.send(embed=myEmbed)
-                        emojis = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
-                        global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, votes, actualMessage
-                        actualMessage = message
-                        voteList = []
-                        votes = {"vote0": 0, "vote1": 0, "vote2": 0, "vote3": 0, "vote4": 0, "vote5": 0, "vote6": 0,
-                                 "vote7": 0,
-                                 "vote8": 0}
-                        vote0 = 0
-                        vote1 = 0
-                        vote2 = 0
-                        vote3 = 0
-                        vote4 = 0
-                        vote5 = 0
-                        vote6 = 0
-                        vote7 = 0
-                        vote8 = 0
+                    if len(text_list) == 1:
+                        name = text_list[0].lower().capitalize()
+                        if name == "Vote":
+                            message = await ctx.send(embed=myEmbed)
+                            emojis = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
+                            global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, votes, actualMessage
+                            actualMessage = message
+                            voteList = []
+                            votes = {"vote0": 0, "vote1": 0, "vote2": 0, "vote3": 0, "vote4": 0, "vote5": 0, "vote6": 0,
+                                     "vote7": 0,
+                                     "vote8": 0}
+                            vote0 = 0
+                            vote1 = 0
+                            vote2 = 0
+                            vote3 = 0
+                            vote4 = 0
+                            vote5 = 0
+                            vote6 = 0
+                            vote7 = 0
+                            vote8 = 0
 
-                        for emoji in emojis[:x]:
-                            await message.add_reaction(emoji)
+                            for emoji in emojis[:x]:
+                                await message.add_reaction(emoji)
                 else:
                     await ctx.send(embed=myEmbed)
 
             elif person.lower() == "help":
-                myEmbed = discord.Embed(title="Help", color=0x00ff00)
-                myEmbed.add_field(name="Add remarks", value="To add remarks type '!badcomms person remark'", inline=False)
-                myEmbed.add_field(name="Delete remarks", value="To delete remark type '!badcomms del person number'(The number is correlating to that persons list of remarks)", inline=False)
-                myEmbed.add_field(name="See remarks", value="To add remarks type '!badcomms person'", inline=False)
-                myEmbed.add_field(name="See leaderboard", value="To see leaderboard type '!badcomms leaderboard'", inline=False)
-                myEmbed.add_field(name="Vote badcomms", value="To vote on badcomms type '!badcomms leaderboard vote'", inline=False)
-                myEmbed.add_field(name="Add person", value="To add person type '!badcomms add person'", inline=False)
-                myEmbed.add_field(name="Delete person", value="To delete person type '!badcomms delete person'", inline=False)
-                await ctx.send(embed=myEmbed)
+                if arg is None:
+                    myEmbed = discord.Embed(title="Help", color=0x00ff00)
+                    myEmbed.add_field(name="Add remarks", value="To add remarks type '!badcomms person remark'", inline=False)
+                    myEmbed.add_field(name="Delete remarks", value="To delete remark type '!badcomms del person number'(The number is correlating to that persons list of remarks)", inline=False)
+                    myEmbed.add_field(name="See remarks", value="To add remarks type '!badcomms person'", inline=False)
+                    myEmbed.add_field(name="See leaderboard", value="To see leaderboard type '!badcomms leaderboard'", inline=False)
+                    myEmbed.add_field(name="Vote badcomms", value="To vote on badcomms type '!badcomms leaderboard vote'", inline=False)
+                    myEmbed.add_field(name="Add person", value="To add person type '!badcomms add person'", inline=False)
+                    myEmbed.add_field(name="Delete person", value="To delete person type '!badcomms delete person'", inline=False)
+                    await ctx.send(embed=myEmbed)
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):

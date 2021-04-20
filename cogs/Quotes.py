@@ -20,7 +20,7 @@ class Quotes(commands.Cog):
             with open(self.quotes_data_path, encoding='utf-8') as f:
                 self.quotes = json.load(f)
         else:
-            self.quotes = {"Nei": ["hei"]}
+            self.quotes = {"delete": ["me"]}
             with open(self.quotes_data_path, "x", encoding='utf-8') as f:
                 json.dump(self.quotes, f)
 
@@ -40,15 +40,18 @@ class Quotes(commands.Cog):
     async def quote(self, ctx, *, arg="None"):
 
         if arg == "None":  # If the argument is the basic "None", it goes straight to random quote
-            name = random.choice(self.names)
+            if self.names != []:
+                name = random.choice(self.names)
 
-            if self.quotes[name] == []:
-                response = f"Error no quote for: {name}"
+                if self.quotes[name] == []:
+                    response = f"Error no quote for: {name}"
 
+                else:
+                    response = f"Quote from: {name} '{random.choice(self.quotes[name])}'"
+
+                await ctx.send(response)
             else:
-                response = f"Quote from: {name} '{random.choice(self.quotes[name])}'"
-
-            await ctx.send(response)
+                await ctx.send("No users detected, please add one. '!quote help' for more help.")
 
         elif arg.lower().capitalize() in self.names:  # Checks if the text is a name, if it is it sends a random quote from that name
             if self.quotes[arg.lower().capitalize()] == []:
@@ -73,53 +76,59 @@ class Quotes(commands.Cog):
                 self.save()
 
             elif command == "all":  # Runs if the all command is used
-                if text_list[1].lower().capitalize() in self.names:
-                    title_thing = f"All quotes from: {text_list[1].lower().capitalize()}"
-                    myEmbed = discord.Embed(title=title_thing, color=0x00ff00)
-                    x = 0
+                if len(text_list) == 2:
+                    lname = text_list[1].lower().capitalize()
+                    if lname in self.names:
+                        title_thing = f"All quotes from: {lname}"
+                        myEmbed = discord.Embed(title=title_thing, color=0x00ff00)
+                        x = 0
 
-                    for i in self.quotes[text_list[1].lower().capitalize()]:
-                        myEmbed.add_field(name=x, value=i, inline=False)
-                        x = x + 1
+                        for i in self.quotes[lname]:
+                            myEmbed.add_field(name=x, value=i, inline=False)
+                            x = x + 1
 
-                    await ctx.send(embed=myEmbed)
+                        await ctx.send(embed=myEmbed)
 
             elif command == "del":  # Runs if the delete command is used
-                lname = text_list[1].lower().capitalize()
-                if lname in self.names:
-                    index = int(text_list[2])
-                    if self.quotes[lname] != [] and len(self.quotes[lname])-1 >= index:
-                        await ctx.send(
-                            f"Removing quote from: {lname} '{self.quotes[lname].pop(index)}'")
-                        self.save()
-                    else:
-                        await ctx.send("That quote does not exist")
+                if len(text_list) == 3:
+                    lname = text_list[1].lower().capitalize()
+                    if lname in self.names:
+                        index = int(text_list[2])
+                        if self.quotes[lname] != [] and len(self.quotes[lname])-1 >= index:
+                            await ctx.send(
+                                f"Removing quote from: {lname} '{self.quotes[lname].pop(index)}'")
+                            self.save()
+                        else:
+                            await ctx.send("That quote does not exist")
 
             elif command == "add":
-                lname = text_list[1].lower().capitalize()
-                if lname not in self.names:
-                    self.quotes[lname] = []
-                    await ctx.send(f"{lname} is now added")
-                    self.save()
+                if len(text_list) == 2:
+                    lname = text_list[1].lower().capitalize()
+                    if lname not in self.names:
+                        self.quotes[lname] = []
+                        await ctx.send(f"{lname} is now added")
+                        self.save()
 
             elif command == "delete":
-                lname = text_list[1].lower().capitalize()
-                if lname in self.names:
-                    await ctx.send(f"{lname} is now deleted")
-                    self.quotes.pop(lname)
-                    self.save()
+                if len(text_list) == 2:
+                    lname = text_list[1].lower().capitalize()
+                    if lname in self.names:
+                        await ctx.send(f"{lname} is now deleted")
+                        self.quotes.pop(lname)
+                        self.save()
 
             elif command == "help":  # Runs if the help command is used
-                myEmbed = discord.Embed(title="Help", color=0x00ff00)
-                myEmbed.add_field(name="See quotes",
-                                  value="To see random quotes type '!quote' or '!quote person' to get personalized quotes",
-                                  inline=False)
-                myEmbed.add_field(name="Add quotes", value="To add quotes type '!quote person quote'", inline=False)
-                myEmbed.add_field(name="All quotes", value="To see all quotes from person type '!quote all person'",
-                                  inline=False)
-                myEmbed.add_field(name="Delete quotes",
-                                  value="To delete quotes type '!quote del person number'(The number is correlating to the all list)",
-                                  inline=False)
-                myEmbed.add_field(name="Add person", value="To add quotes type '!quote add person'", inline=False)
-                myEmbed.add_field(name="Delete person", value="To add quotes type '!quote delete person'", inline=False)
-                await ctx.send(embed=myEmbed)
+                if len(text_list) == 1:
+                    myEmbed = discord.Embed(title="Help", color=0x00ff00)
+                    myEmbed.add_field(name="See quotes",
+                                      value="To see random quotes type '!quote' or '!quote person' to get personalized quotes",
+                                      inline=False)
+                    myEmbed.add_field(name="Add quotes", value="To add quotes type '!quote person quote'", inline=False)
+                    myEmbed.add_field(name="All quotes", value="To see all quotes from person type '!quote all person'",
+                                      inline=False)
+                    myEmbed.add_field(name="Delete quotes",
+                                      value="To delete quotes type '!quote del person number'(The number is correlating to the all list)",
+                                      inline=False)
+                    myEmbed.add_field(name="Add person", value="To add quotes type '!quote add person'", inline=False)
+                    myEmbed.add_field(name="Delete person", value="To add quotes type '!quote delete person'", inline=False)
+                    await ctx.send(embed=myEmbed)
