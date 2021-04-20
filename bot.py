@@ -10,7 +10,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 def main():
     intents = discord.Intents().all()
-    bot = commands.Bot(command_prefix=commands.when_mentioned_or('.'), intents=intents)
+    bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
 
     for cog in utils.get_cogs():
         bot.load_extension(cog)
