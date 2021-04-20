@@ -1,5 +1,8 @@
 import discord
 import os
+
+from discord.ext.commands import ExtensionNotLoaded, ExtensionNotFound
+
 import utils
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -37,12 +40,20 @@ def main():
             for cog in utils.get_cogs():
                 try:
                     bot.unload_extension(cog)
+                except ExtensionNotLoaded:
+                    pass
+                except ExtensionNotFound as e:
+                    embed.add_field(
+                        name=f'Failed to reload: {cog}',
+                        value=f'❌: {e}',
+                        inline=False)
+
+                try:
                     bot.load_extension(cog)
                     embed.add_field(
                         name=f'Reloaded: {cog}',
                         value='✅',
                         inline=False)
-
                 except Exception as e:
                     embed.add_field(
                         name=f'Failed to reload: {cog}',
