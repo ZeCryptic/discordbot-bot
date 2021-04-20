@@ -65,3 +65,6 @@ class EmojiStats(commands.Cog):
 
         return user_usage_dict, emojies_dict
 
+
+def setup(bot):
+    bot.add_cog(EmojiStats(bot))

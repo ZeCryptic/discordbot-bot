@@ -1,4 +1,5 @@
 import string
+import os
 
 
 def format_filename(s):
@@ -16,3 +17,12 @@ an invalid filename.
     filename = ''.join(c for c in s if c in valid_chars)
     filename = filename.replace(' ', '_')  # I don't like spaces in filenames.
     return filename
+
+
+def get_cogs():
+    """Gets all cogs in ./cogs"""
+    cogs = []
+    for file in os.listdir('./cogs'):  # loads all cogs
+        if file.endswith('.py') and not file.startswith('_'):
+            cogs.append(f"cogs.{file[:-3]}")
+    return cogs

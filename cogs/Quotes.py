@@ -132,3 +132,7 @@ class Quotes(commands.Cog):
                     myEmbed.add_field(name="Add person", value="To add quotes type '!quote add person'", inline=False)
                     myEmbed.add_field(name="Delete person", value="To add quotes type '!quote delete person'", inline=False)
                     await ctx.send(embed=myEmbed)
+
+
+def setup(bot):
+    bot.add_cog(Quotes(bot))

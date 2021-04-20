@@ -203,3 +203,7 @@ class Badcomms(commands.Cog):
                             who = y
                     index = int(who[4])
                     await ch.send(f"{self.cNames[index]} has the most votes({x}) for bad comms")
+
+
+def setup(bot):
+    bot.add_cog(Badcomms(bot))
