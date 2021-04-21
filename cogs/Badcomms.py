@@ -52,9 +52,9 @@ class Badcomms(commands.Cog):
                     self.comms[person.lower().capitalize()].append(arg)
                     self.save()
                     remarks = self.count_remarks(person.lower().capitalize())
-                    await ctx.send(f"{person.lower().capitalize()} now has {remarks} remarks")
+                    await ctx.send(f"{str(ctx.author)[:-5]} gave {person.lower().capitalize()} an remark and now has {remarks} remarks")
                 else:
-                    myEmbed = discord.Embed(title=f"Badcomms from: {person.lower().capitalize()}", color=0x00ff00)
+                    myEmbed = discord.Embed(title=f"{str(ctx.author)[:-5]} requested badcomms from: {person.lower().capitalize()}", color=0x00ff00)
                     x = 0
                     for i in self.comms[person.lower().capitalize()]:
                         myEmbed.add_field(name=f"Badcomms nr: {x}", value=i, inline=False)
@@ -70,10 +70,10 @@ class Badcomms(commands.Cog):
                             index = int(text_list[1])
                             if self.comms[name] != [] and len(self.comms[name]) - 1 >= index:
                                 await ctx.send(
-                                    f"Removing remark from: {name} '{self.comms[name].pop(index)}'")
+                                    f"{str(ctx.author)[:-5]} removed remark from: {name} '{self.comms[name].pop(index)}'")
                                 self.save()
                             else:
-                                await ctx.send("That remark does not exist")
+                                await ctx.send(f"{str(ctx.author)[:-5]} that remark does not exist")
 
             elif person.lower() == "add":
                 if arg is not None:
@@ -82,7 +82,7 @@ class Badcomms(commands.Cog):
                         name = text_list[0].lower().capitalize()
                         if name not in self.cNames:
                             self.comms[name] = []
-                            await ctx.send(f"{name} is now added")
+                            await ctx.send(f"{str(ctx.author)[:-5]} added: {name}")
                             self.save()
 
             elif person.lower() == "delete":
@@ -91,12 +91,12 @@ class Badcomms(commands.Cog):
                     if len(text_list) == 1:
                         name = text_list[0].lower().capitalize()
                         if name in self.cNames:
-                            await ctx.send(f"{name} is now deleted")
+                            await ctx.send(f"{str(ctx.author)[:-5]} deleted: {name}")
                             self.comms.pop(name)
                             self.save()
 
             elif person.lower() == "leaderboard":
-                myEmbed = discord.Embed(title="Badcommers", color=0x00ff00)
+                myEmbed = discord.Embed(title=f"{str(ctx.author)[:-5]} requested badcommers leaderboard", color=0x00ff00)
                 x = 0
                 for person in self.comms:
                     z = self.count_remarks(person)
@@ -132,7 +132,7 @@ class Badcomms(commands.Cog):
 
             elif person.lower() == "help":
                 if arg is None:
-                    myEmbed = discord.Embed(title="Help", color=0x00ff00)
+                    myEmbed = discord.Embed(title=f"Helping {str(ctx.author)[:-5]}", color=0x00ff00)
                     myEmbed.add_field(name="Add remarks", value="To add remarks type '!badcomms person remark'",
                                       inline=False)
                     myEmbed.add_field(name="Delete remarks",
