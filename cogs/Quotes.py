@@ -44,10 +44,10 @@ class Quotes(commands.Cog):
                 name = random.choice(self.names)
 
                 if self.quotes[name] == []:
-                    response = f"Error no quote for: {name}"
+                    response = f"{str(ctx.author.display_name)} there is no quote for: {name}"
 
                 else:
-                    response = f"{str(ctx.author)[:-5]} random quote from: {name} '{random.choice(self.quotes[name])}'"
+                    response = f"{str(ctx.author.display_name)} random quote from: {name} '{random.choice(self.quotes[name])}'"
 
                 await ctx.send(response)
             else:
@@ -57,7 +57,7 @@ class Quotes(commands.Cog):
             if self.quotes[arg.lower().capitalize()] == []:
                 response = f"Error no quote for: {arg.lower().capitalize()}"
             else:
-                response = f"{str(ctx.author)[:-5]} requested quote from: {arg.lower().capitalize()} '{random.choice(self.quotes[arg.capitalize()])}'"
+                response = f"{str(ctx.author.display_name)} requested quote from: {arg.lower().capitalize()} '{random.choice(self.quotes[arg.capitalize()])}'"
 
             await ctx.send(response)
 
@@ -72,14 +72,14 @@ class Quotes(commands.Cog):
                     text = text + " " + i
 
                 self.quotes[command.capitalize()].append(text)
-                await ctx.send(f"{str(ctx.author)[:-5]} added quote from: {command.capitalize()} '{text}' added")
+                await ctx.send(f"{str(ctx.author.display_name)} added quote from: {command.capitalize()} '{text}' added")
                 self.save()
 
             elif command == "all":  # Runs if the all command is used
                 if len(text_list) == 2:
                     lname = text_list[1].lower().capitalize()
                     if lname in self.names:
-                        title_thing = f"{str(ctx.author)[:-5]} requested all quotes from: {lname}"
+                        title_thing = f"{str(ctx.author.display_name)} requested all quotes from: {lname}"
                         myEmbed = discord.Embed(title=title_thing, color=0x00ff00)
                         x = 0
 
@@ -96,30 +96,30 @@ class Quotes(commands.Cog):
                         index = int(text_list[2])
                         if self.quotes[lname] != [] and len(self.quotes[lname])-1 >= index:
                             await ctx.send(
-                                f"{str(ctx.author)[:-5]} removing quote from: {lname} '{self.quotes[lname].pop(index)}'")
+                                f"{str(ctx.author.display_name)} removing quote from: {lname} '{self.quotes[lname].pop(index)}'")
                             self.save()
                         else:
-                            await ctx.send("That quote does not exist")
+                            await ctx.send(f"{str(ctx.author.display_name)} that quote does not exist")
 
             elif command == "add":
                 if len(text_list) == 2:
                     lname = text_list[1].lower().capitalize()
                     if lname not in self.names:
                         self.quotes[lname] = []
-                        await ctx.send(f"{str(ctx.author)[:-5]} added: {lname}")
+                        await ctx.send(f"{str(ctx.author.display_name)} added: {lname}")
                         self.save()
 
             elif command == "delete":
                 if len(text_list) == 2:
                     lname = text_list[1].lower().capitalize()
                     if lname in self.names:
-                        await ctx.send(f"{str(ctx.author)[:-5]} deleted: {lname}")
+                        await ctx.send(f"{str(ctx.author.display_name)} deleted: {lname}")
                         self.quotes.pop(lname)
                         self.save()
 
             elif command == "help":  # Runs if the help command is used
                 if len(text_list) == 1:
-                    myEmbed = discord.Embed(title=f"Helping {str(ctx.author)[:-5]}", color=0x00ff00)
+                    myEmbed = discord.Embed(title=f"Helping {str(ctx.author.display_name)}", color=0x00ff00)
                     myEmbed.add_field(name="See quotes",
                                       value="To see random quotes type '!quote' or '!quote person' to get personalized quotes",
                                       inline=False)
