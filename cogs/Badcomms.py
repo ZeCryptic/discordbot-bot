@@ -6,18 +6,15 @@ from discord.ext import commands, tasks
 from pathlib import Path
 """
 Do next
-#Fix index system, votes doesnt go to the right people
 Improve help
 Add see next vote to a command and maybe the leaderboard
 Add a timer or something to the vote, so voters dont need to be hard coded
-Start working on the roles
 Maybe remove self.cNames and only use self.comms.keys()
 Change the timer to something other than an hour
 Make leaderboard display rank 1-9 in badcomms, others wont be available for voting
 Also add names in the form that I can use them to give roles
 Add a function to replace names if anybody switches gamertags
 Add so each server can have their own badcomms files
-
 """
 
 # noinspection PyGlobalUndefined
@@ -119,8 +116,10 @@ class Badcomms(commands.Cog):
                     text_list = arg.split(" ")
                     name = text_list[0].lower().capitalize()
                     if name in x[0]:
-                        name = i
+                        print(i)
+                        name_id = i
                         is_name2 = True
+
             if is_name is True:
                 if arg is not None:
 
@@ -174,13 +173,12 @@ class Badcomms(commands.Cog):
                                 await ctx.send(f"{ctx.author.display_name} added: {name}")
                                 self.save()
 
-
             elif person.lower() == "delete":
                 if arg is not None:
                     if len(text_list) == 1:
                         if is_name2 is True:
-                            await ctx.send(f"{str(ctx.author.display_name)} deleted: {name.split('/')[0]}")
-                            self.comms.pop(name)
+                            await ctx.send(f"{str(ctx.author.display_name)} deleted: {name}")
+                            self.comms.pop(name_id)
                             self.save()
 
             elif person.lower() == "leaderboard":
@@ -197,14 +195,20 @@ class Badcomms(commands.Cog):
 
             elif person.lower() == "vote": #Need to write a command to show when next vote is due
                 if arg is not None:
-                    if len(text_list) == 2:
+                    if len(text_list) == 5:
                         try:
+                            print(text_list[2])
                             day = int(text_list[0])
                             hours = int(text_list[1])
-                            self.vote_servers[ctx.guild.id] = [ctx.channel.id, self.new_date(day), False, hours]
+                            self.vote_servers[ctx.guild.id] = [ctx.channel.id, self.new_date(day), False, hours, hours, int(text_list[2][3:-1]), int(text_list[3][3:-1]), int(text_list[4][3:-1])]
                             self.save_servers()
                         except:
                             await ctx.send("Needs the date of the vote, not the month, example '!badcomms vote 30' will vote on the 30 th of every month. PS. It will skip February")
+
+            elif person.lower() == "test":
+                for x, y in self.vote_servers.items():
+                    await self.leaderboard_vote(x,y)
+                    self.vote_servers[x] = [y[0], y[1], True, y[3], y[4], y[5], y[6], y[7]]
 
             elif person.lower() == "help": #Need to rewrite help to show the new changes
                 if arg is None:
@@ -231,7 +235,6 @@ class Badcomms(commands.Cog):
         global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, vote9, votes, actualMessage
         if reaction.message == actualMessage:
             emoji = reaction.emoji
-            ch = reaction.message.channel
 
             if user.bot:
                 return
@@ -282,46 +285,62 @@ class Badcomms(commands.Cog):
                     else:
                         return
 
-                """
-                if len(voteList) == 7:
-                    x = -1
-                    who = ""
-                    for y, i in votes.items():
-                        if i > x:
-                            x = i
-                            who = y
-                    index = int(who[4])
-                    await ch.send(f"{self.cNames[index]} has the most votes({x}) for bad comms")
-                """
-
-    async def count_votes(self, x, y):
+    async def count_votes(self, x, content):
         global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, vote9, votes, actualMessage, voteable
-        channel = self.bot.get_guild(int(x)).get_channel(int(y[0]))
-        x = -1
         first = ""
         second = ""
         third = ""
+        liste = []
+        first_done = False
+        second_done = False
+        third_done = False
+        for y in sorted(votes.values())[::-1]:
+            liste.append(y)
+
         for y, i in votes.items():
-            if i > x:
-                if x != -1:
-                    if second != "":
-                        third = second
-                    second = first
-                x = i
+            if i == liste[0] and first_done is not True:
                 first = y
-        index = int(first[4])
-        print(first)
-        print(second)
-        print(third)
+                first_done = True
+            elif i == liste[1] and second_done is not True:
+                second = y
+                second_done = True
+            elif i == liste[2] and third_done is not True:
+                third = y
+                third_done = True
+
+        first_index = int(first[4])
+        if second != "":
+            second_index = int(second[4])
+        else:
+            second_index = -1
+        if third != "":
+            third_index = int(third[4])
+        else:
+            third_index = -1
         count = 0
-        for z, y in voteable.items():
-            print(index, count)
-            print(z)
-            if index == count:
-                await channel.send(f"{z} has the most votes({x}) for bad comms") #Fix index system, votes doesnt go to the right people
+        for name_id, number_of_badcomms in voteable.items():
+            if first_index == count:
+                await self.give_role(x, content, name_id, number_of_badcomms, first, 1)
+                count = count + 1
+            elif second_index == count:
+                await self.give_role(x, content, name_id, number_of_badcomms, second, 2)
+                count = count + 1
+            elif third_index == count:
+                await self.give_role(x, content, name_id, number_of_badcomms, third, 3)
                 count = count + 1
             else:
                 count = count + 1
+
+    async def give_role(self, x, content, name_id, number_of_badcomms, number_votes, place):
+        global votes
+        channel = self.bot.get_guild(int(x)).get_channel(int(content[0]))
+        role_ids = [int(content[5]), int(content[6]), int(content[7])]
+        for role in [r for r in self.bot.get_guild(int(x)).roles if r.id == role_ids[place-1]]:
+            try:
+                await channel.send(f"{name_id.split('/')[0]} has been placed {place} with votes({votes[number_votes]}) and badcomms({number_of_badcomms}), and is therefore granted the role '{role}' for bad comms")
+                await self.bot.get_guild(int(x)).get_member(int(name_id.split("/")[1])).add_roles(role)
+            except:
+                print("wtf")
 
     async def leaderboard_vote(self, x, y):
         global voteable
@@ -334,9 +353,9 @@ class Badcomms(commands.Cog):
         voteable = {}
         for person in self.comms:
             z[person] = self.count_remarks(person)
-            #myEmbed.add_field(name=f"{x} {person.split('/')[0]}", value=f"Number of badcomms: {z}", inline=False)
-            #x = x + 1
+
         order = sorted(z.values())
+
         for i in order[::-1]:
             for a, y in z.items():
                 if i == y:
@@ -345,8 +364,7 @@ class Badcomms(commands.Cog):
                             voteable[a] = y
                             myEmbed.add_field(name=f"{x} {a.split('/')[0]}", value=f"Number of badcomms: {y}", inline=False)
                             x = x + 1
-        for i in voteable:
-            print(i)
+
         message = await channel.send(embed=myEmbed)
         emojis = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
         global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, vote9, votes, actualMessage
@@ -369,7 +387,7 @@ class Badcomms(commands.Cog):
         for emoji in emojis[:x]:
             await message.add_reaction(emoji)
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(hours=1)
     async def show_time(self):
         global date
         date = str(datetime.datetime.today())
@@ -377,17 +395,16 @@ class Badcomms(commands.Cog):
         for x, y in self.vote_servers.items():
             if str(y[1]) in date:
                 await self.leaderboard_vote(x, y)
-                self.vote_servers[x] = [y[0], self.new_date(), True, y[3]]
+                self.vote_servers[x] = [y[0], self.new_date(), True, y[3], y[4], y[5], y[6], y[7]]
                 self.save_servers()
             if y[2] is True:
                 if y[3] >= 1:
-                    self.vote_servers[x] = [y[0], y[1], True, y[3]-1]
+                    self.vote_servers[x] = [y[0], y[1], True, y[3]-1, y[4], y[5], y[6], y[7]]
                     self.save_servers()
                 elif y[3] == 0:
-                    self.vote_servers[x] = [y[0], y[1], False, 0]
+                    self.vote_servers[x] = [y[0], y[1], False, y[4], y[4], y[5], y[6], y[7]]
                     self.save_servers()
                     await self.count_votes(x, y)
-
 
     @show_time.before_loop
     async def before_show_time(self):
