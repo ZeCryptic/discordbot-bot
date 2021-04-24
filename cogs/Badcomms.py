@@ -107,16 +107,16 @@ class Badcomms(commands.Cog):
         if person is not None:
             is_name = False
             is_name2 = False
+            if arg is not None:
+                text_list = arg.split(" ")
             for i in self.comms.keys():
                 x = i.split("/")
                 if person.lower().capitalize() in x[0]:
                     is_name = True
                     person = i
                 if arg is not None:
-                    text_list = arg.split(" ")
                     name = text_list[0].lower().capitalize()
                     if name in x[0]:
-                        print(i)
                         name_id = i
                         is_name2 = True
 
@@ -340,7 +340,7 @@ class Badcomms(commands.Cog):
                 await channel.send(f"{name_id.split('/')[0]} has been placed {place} with votes({votes[number_votes]}) and badcomms({number_of_badcomms}), and is therefore granted the role '{role}' for bad comms")
                 await self.bot.get_guild(int(x)).get_member(int(name_id.split("/")[1])).add_roles(role)
             except:
-                print("wtf")
+                return
 
     async def leaderboard_vote(self, x, y):
         global voteable
