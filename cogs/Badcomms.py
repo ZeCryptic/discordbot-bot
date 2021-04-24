@@ -6,12 +6,18 @@ from discord.ext import commands, tasks
 from pathlib import Path
 """
 Do next
+#Fix index system, votes doesnt go to the right people
 Improve help
 Add see next vote to a command and maybe the leaderboard
 Add a timer or something to the vote, so voters dont need to be hard coded
 Start working on the roles
 Maybe remove self.cNames and only use self.comms.keys()
 Change the timer to something other than an hour
+Make leaderboard display rank 1-9 in badcomms, others wont be available for voting
+Also add names in the form that I can use them to give roles
+Add a function to replace names if anybody switches gamertags
+Add so each server can have their own badcomms files
+
 """
 
 # noinspection PyGlobalUndefined
@@ -102,17 +108,30 @@ class Badcomms(commands.Cog):
     async def bad_comms(self, ctx, person=None, *, arg=None):
         global date
         if person is not None:
-
-            if person.lower().capitalize() in self.cNames:
+            is_name = False
+            is_name2 = False
+            for i in self.comms.keys():
+                x = i.split("/")
+                if person.lower().capitalize() in x[0]:
+                    is_name = True
+                    person = i
                 if arg is not None:
-                    self.comms[person.lower().capitalize()].append(arg)
+                    text_list = arg.split(" ")
+                    name = text_list[0].lower().capitalize()
+                    if name in x[0]:
+                        name = i
+                        is_name2 = True
+            if is_name is True:
+                if arg is not None:
+
+                    self.comms[person].append(arg)
                     self.save()
-                    remarks = self.count_remarks(person.lower().capitalize())
+                    remarks = self.count_remarks(person)
                     await ctx.send(
-                        f"{str(ctx.author.display_name)} gave {person.lower().capitalize()} an remark and now has {remarks} remarks")
+                        f"{str(ctx.author.display_name)} gave {person.split('/')[0]} an remark because '{arg}', and now has {remarks} remarks.")
                 else:
                     myEmbed = discord.Embed(
-                        title=f"{str(ctx.author.display_name)} requested badcomms from: {person.lower().capitalize()}",
+                        title=f"{str(ctx.author.display_name)} requested badcomms from: {person}",
                         color=0x00ff00)
                     x = 0
                     for i in self.comms[person.lower().capitalize()]:
@@ -124,33 +143,43 @@ class Badcomms(commands.Cog):
                 if arg is not None:
                     text_list = arg.split(" ")
                     if len(text_list) == 2:
-                        name = text_list[0].lower().capitalize()
-                        if name in self.cNames:
-                            index = int(text_list[1])
-                            if self.comms[name] != [] and len(self.comms[name]) - 1 >= index:
-                                await ctx.send(
-                                    f"{str(ctx.author.display_name)} removed remark from: {name} '{self.comms[name].pop(index)}'")
-                                self.save()
-                            else:
-                                await ctx.send(f"{str(ctx.author.display_name)} that remark does not exist")
+                        if is_name2 is True:
+                            try:
+                                index = int(text_list[1])
+                                if self.comms[name] != [] and len(self.comms[name]) - 1 >= index:
+                                    await ctx.send(
+                                        f"{str(ctx.author.display_name)} removed remark from: {name.split('/')[0]} '{self.comms[name].pop(index)}'")
+                                    self.save()
+                                else:
+                                    await ctx.send(f"{str(ctx.author.display_name)} that remark does not exist")
+                            except:
+                                await ctx.send("No number detected")
 
             elif person.lower() == "add":
+                parameter = True
                 if arg is not None:
-                    text_list = arg.split(" ")
-                    if len(text_list) == 1:
+                    if len(text_list) == 2:
                         name = text_list[0].lower().capitalize()
-                        if name not in self.cNames:
-                            self.comms[name] = []
-                            await ctx.send(f"{str(ctx.author.display_name)} added: {name}")
-                            self.save()
+                        id = text_list[1][3:-1]
+                        for i in self.cNames:
+                            x = i.split("/")
+                            if name == x[0]:
+                                parameter = False
+                            elif id == x[1]:
+                                parameter = False
+                        if parameter == True:
+                            if text_list[1][:3] == "<@!":
+                                namep = f"{name}/{text_list[1][3:-1]}"
+                                self.comms[namep] = []
+                                await ctx.send(f"{ctx.author.display_name} added: {name}")
+                                self.save()
+
 
             elif person.lower() == "delete":
                 if arg is not None:
-                    text_list = arg.split(" ")
                     if len(text_list) == 1:
-                        name = text_list[0].lower().capitalize()
-                        if name in self.cNames:
-                            await ctx.send(f"{str(ctx.author.display_name)} deleted: {name}")
+                        if is_name2 is True:
+                            await ctx.send(f"{str(ctx.author.display_name)} deleted: {name.split('/')[0]}")
                             self.comms.pop(name)
                             self.save()
 
@@ -161,19 +190,18 @@ class Badcomms(commands.Cog):
 
                 for person in self.comms:
                     z = self.count_remarks(person)
-                    myEmbed.add_field(name=f"{x} {person}", value=f"Number of badcomms: {z}", inline=False)
+                    myEmbed.add_field(name=f"{x} {person.split('/')[0]}", value=f"Number of badcomms: {z}", inline=False)
                     x = x + 1
 
                 await ctx.send(embed=myEmbed)
 
             elif person.lower() == "vote": #Need to write a command to show when next vote is due
                 if arg is not None:
-                    text_list = arg.split(" ")
-                    if len(text_list) == 1:
+                    if len(text_list) == 2:
                         try:
                             day = int(text_list[0])
-                            self.new_date(day)
-                            self.vote_servers[ctx.guild.id] = [ctx.channel.id, day]
+                            hours = int(text_list[1])
+                            self.vote_servers[ctx.guild.id] = [ctx.channel.id, self.new_date(day), False, hours]
                             self.save_servers()
                         except:
                             await ctx.send("Needs the date of the vote, not the month, example '!badcomms vote 30' will vote on the 30 th of every month. PS. It will skip February")
@@ -200,7 +228,7 @@ class Badcomms(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
-        global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, votes, actualMessage
+        global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, vote9, votes, actualMessage
         if reaction.message == actualMessage:
             emoji = reaction.emoji
             ch = reaction.message.channel
@@ -247,9 +275,14 @@ class Badcomms(commands.Cog):
                         vote8 = vote8 + 1
                         votes["vote8"] = vote8
 
+                    elif emoji == "9️⃣":
+                        vote8 = vote9 + 1
+                        votes["vote9"] = vote9
+
                     else:
                         return
 
+                """
                 if len(voteList) == 7:
                     x = -1
                     who = ""
@@ -259,50 +292,93 @@ class Badcomms(commands.Cog):
                             who = y
                     index = int(who[4])
                     await ch.send(f"{self.cNames[index]} has the most votes({x}) for bad comms")
+                """
 
-    async def leaderboard_vote(self):
-        for x, y in self.vote_servers.items():
-            channel = self.bot.get_guild(int(x)).get_channel(int(y[0]))
+    async def count_votes(self, x, y):
+        global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, vote9, votes, actualMessage, voteable
+        channel = self.bot.get_guild(int(x)).get_channel(int(y[0]))
+        x = -1
+        first = ""
+        second = ""
+        third = ""
+        for y, i in votes.items():
+            if i > x:
+                if x != -1:
+                    if second != "":
+                        third = second
+                    second = first
+                x = i
+                first = y
+        index = int(first[4])
+        print(first)
+        print(second)
+        print(third)
+        await channel.send(f"{voteable[self.cNames[index]]} has the most votes({x}) for bad comms") #Fix index system, votes doesnt go to the right people
 
-            myEmbed = discord.Embed(title=f"Its time for the badcommers vote",
-                                    color=0x00ff00)
-            x = 0
+    async def leaderboard_vote(self, x, y):
+        global voteable
+        channel = self.bot.get_guild(int(x)).get_channel(int(y[0]))
 
-            for person in self.comms:
-                z = self.count_remarks(person)
-                myEmbed.add_field(name=f"{x} {person}", value=f"Number of badcomms: {z}", inline=False)
-                x = x + 1
-            message = await channel.send(embed=myEmbed)
-            emojis = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
-            global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, votes, actualMessage
-            actualMessage = message
-            voteList = []
-            votes = {"vote0": 0, "vote1": 0, "vote2": 0, "vote3": 0, "vote4": 0, "vote5": 0, "vote6": 0,
-                     "vote7": 0,
-                     "vote8": 0}
-            vote0 = 0
-            vote1 = 0
-            vote2 = 0
-            vote3 = 0
-            vote4 = 0
-            vote5 = 0
-            vote6 = 0
-            vote7 = 0
-            vote8 = 0
+        myEmbed = discord.Embed(title=f"Its time for the badcommers vote",
+                                color=0x00ff00)
+        x = 0
+        z = {}
+        voteable = {}
+        for person in self.comms:
+            z[person] = self.count_remarks(person)
+            #myEmbed.add_field(name=f"{x} {person.split('/')[0]}", value=f"Number of badcomms: {z}", inline=False)
+            #x = x + 1
+        order = sorted(z.values())
+        for i in order[::-1]:
+            for a, y in z.items():
+                if i == y:
+                    if x < 10:
+                        voteable[a] = y
+                        myEmbed.add_field(name=f"{x} {a.split('/')[0]}", value=f"Number of badcomms: {y}", inline=False)
+                        x = x + 1
 
-            for emoji in emojis[:x]:
-                await message.add_reaction(emoji)
 
-    @tasks.loop(hours=1)
+        message = await channel.send(embed=myEmbed)
+        emojis = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
+        global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, vote9, votes, actualMessage
+        actualMessage = message
+        voteList = []
+        votes = {"vote0": 0, "vote1": 0, "vote2": 0, "vote3": 0, "vote4": 0, "vote5": 0, "vote6": 0,
+                 "vote7": 0,
+                 "vote8": 0, "vote9": 0}
+        vote0 = 0
+        vote1 = 0
+        vote2 = 0
+        vote3 = 0
+        vote4 = 0
+        vote5 = 0
+        vote6 = 0
+        vote7 = 0
+        vote8 = 0
+        vote9 = 0
+
+        for emoji in emojis[:x]:
+            await message.add_reaction(emoji)
+
+    @tasks.loop(minutes=1)
     async def show_time(self):
         global date
         date = str(datetime.datetime.today())
         #date = str(datetime.date(2021, 4, 25)) #For testing
         for x, y in self.vote_servers.items():
             if str(y[1]) in date:
-                await self.leaderboard_vote()
-                self.vote_servers[x] = [y[0], self.new_date()]
+                await self.leaderboard_vote(x, y)
+                self.vote_servers[x] = [y[0], self.new_date(), True, y[3]]
                 self.save_servers()
+            if y[2] is True:
+                if y[3] >= 1:
+                    self.vote_servers[x] = [y[0], y[1], True, y[3]-1]
+                    self.save_servers()
+                elif y[3] == 0:
+                    self.vote_servers[x] = [y[0], y[1], False, 0]
+                    self.save_servers()
+                    await self.count_votes(x, y)
+
 
     @show_time.before_loop
     async def before_show_time(self):
