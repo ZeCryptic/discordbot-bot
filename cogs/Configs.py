@@ -3,6 +3,7 @@ import os
 import discord
 from discord.ext import commands
 from discord.ext.commands import ExtensionNotLoaded
+from discord.ext.commands.errors import NotOwner
 
 import utils
 
@@ -51,6 +52,13 @@ class Configs(commands.Cog):
 
             await ctx.send(embed=embed)
 
+    @dev.error
+    async def dev_error(self, ctx, error):
+        if isinstance(error, NotOwner):
+            await ctx.send('Dev commands only usable by bot owners')
+        else:
+            await ctx.send('There was an error executing that command')
+            print('Error')
 
 def setup(bot):
     bot.add_cog(Configs(bot))

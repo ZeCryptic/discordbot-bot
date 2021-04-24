@@ -9,11 +9,12 @@ from discord.ext import commands
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+PREFIX = '!' # TODO: Make prefix a variable configurable by the user
 
 
 def main():
     intents = discord.Intents().all()
-    bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
+    bot = commands.Bot(command_prefix=commands.when_mentioned_or(PREFIX), intents=intents)
 
     for cog in utils.get_cogs():
         bot.load_extension(cog)
