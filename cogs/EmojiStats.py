@@ -1,69 +1,63 @@
 import discord
 from discord.ext import commands
+from discord.ext.commands.errors import EmojiNotFound
 from utils import format_filename
 import pickle
 import re
+
+EMOJI_REGEX = r"<:(?P<name>\w+):(?P<id>\d+)>"
 
 
 class EmojiStats(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.messages = {}
+
+    def load_messages(self, guild_id):
+        history = self.bot.get_cog('History')
+        return history.load_messages(guild_id)
+
+    def extract_emote_ids(self, message):
+        emojis = re.findall(EMOJI_REGEX, message)
+        ids = [e[1] for e in emojis if e is not None]
+        return ids
 
     @commands.command()
-    async def emoji(self, ctx):
-        await ctx.send('Scanning all channels for emoji usage. This might take a while...')
-        user_usage, overall_usage = await self.get_emoji_usage(ctx)
-        response_string = '>>> '
-        for i, e_id in enumerate(sorted(overall_usage, key=overall_usage.get, reverse=False)):
-            if i >= 10:
+    async def usage(self, ctx, emoji: discord.Emoji):
+        messages_dict = self.load_messages(ctx.guild.id)
+
+        user_emoji_usage = {}
+        for user in ctx.guild.members:
+            user_name = f'{user.name}#{user.discriminator}'
+            user_emoji_usage[user_name] = 0
+
+        total_count = 0
+        for channel in messages_dict:
+            for message in messages_dict[channel]['messages']:
+                if str(emoji.id) in self.extract_emote_ids(message['content']):
+                    user_emoji_usage[message['author']] += 1
+                    total_count += 1
+
+        medals = {0: '🥇', 1: '🥈', 2: '🥉'}
+        embed = discord.Embed(title=f'Usage of the {emoji} emote:')
+        for i, user in enumerate(sorted(user_emoji_usage, key=user_emoji_usage.get, reverse=True)):
+            if i > 9 or user_emoji_usage[user] <= 0:
                 break
-            response_string += f'**#{i + 1}**: {self.bot.get_emoji(e_id)}, {overall_usage[e_id]}\n'
+            embed.add_field(
+                name=f'#{i+1}: {medals.get(i, "")}{user}',
+                value=str(user_emoji_usage[user]),
+                inline=False
+            )
 
-        await ctx.send(response_string)
-        filename = format_filename(ctx.guild.name)
-        pickle.dump(user_usage, open(f'EmojiStats_data\\{filename}_uu.pkl', 'wb'))
-        pickle.dump(overall_usage, open(f'EmojiStats_data\\{filename}_ou.pkl', 'wb'))
+        await ctx.send(embed=embed)
 
-    def get_emoji_name(self, emoji_id):
-        return self.bot.get_emoji(emoji_id).name
+    @usage.error
+    async def usage_error(self, ctx, error):
+        if isinstance(error, EmojiNotFound):
+            await ctx.send('Emoji not found. You can only use emojis from this server')
+        else:
+            print(error)
+            await ctx.send(f'Error: {error}')
 
-
-    @staticmethod
-    async def get_emoji_usage(ctx):
-        channels = ctx.guild.channels
-        # channels = [ctx.channel] TESTING
-
-        # initializes dictionaries, TODO: simplify the initialization
-        channel_users = [f'{m.name}#{m.discriminator}' for m in ctx.guild.members if not m.bot]
-        channel_emoji_ids = [e.id for e in ctx.guild.emojis]
-        user_usage_dict = {}
-        emojies_dict = {}
-        for e_id in channel_emoji_ids:
-            emojies_dict[e_id] = 0
-        for user in channel_users:
-            user_usage_dict[user] = emojies_dict.copy()
-        for channel in channels:
-            if type(channel) != discord.TextChannel:
-                continue
-
-            async for message in channel.history(limit=None):
-                if message.author.bot:
-                    continue
-
-                message_emojies = re.findall("<:[^<,>]+:[0-9]+>", message.content)
-                if not message_emojies:
-                    continue
-
-                author = f'{message.author.name}#{message.author.discriminator}'
-                for emoji in message_emojies:
-                    id = int(emoji.split(':')[2][:-1])
-                    if id not in channel_emoji_ids:  # Emoji likely not from server or deleted
-                        continue
-                    user_usage_dict[author][id] += 1
-                    emojies_dict[id] += 1
-
-        return user_usage_dict, emojies_dict
 
 
 def setup(bot):
