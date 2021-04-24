@@ -39,7 +39,8 @@ class EmojiStats(commands.Cog):
                     total_count += 1
 
         medals = {0: '🥇', 1: '🥈', 2: '🥉'}
-        embed = discord.Embed(title=f'Usage of the {emoji} emote:')
+        embed = discord.Embed(title=f'Usage of the "{emoji.name}" emote:')
+        embed.set_thumbnail(url=emoji.url)
         for i, user in enumerate(sorted(user_emoji_usage, key=user_emoji_usage.get, reverse=True)):
             if i > 9 or user_emoji_usage[user] <= 0:
                 break
