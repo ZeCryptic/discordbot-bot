@@ -6,6 +6,7 @@ import pickle
 import re
 
 EMOJI_REGEX = r"<:(?P<name>\w+):(?P<id>\d+)>"
+PREFIX = '!'    # TODO: Make prefix a variable configurable by the user
 
 
 class EmojiStats(commands.Cog):
@@ -33,7 +34,7 @@ class EmojiStats(commands.Cog):
         total_count = 0
         for channel in messages_dict:
             for message in messages_dict[channel]['messages']:
-                if str(emoji.id) in self.extract_emote_ids(message['content']):
+                if str(emoji.id) in self.extract_emote_ids(message['content']) and not message['content'].startswith(PREFIX):
                     user_emoji_usage[message['author']] += 1
                     total_count += 1
 
