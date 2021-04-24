@@ -276,7 +276,7 @@ class Badcomms(commands.Cog):
                         votes["vote8"] = vote8
 
                     elif emoji == "9️⃣":
-                        vote8 = vote9 + 1
+                        vote9 = vote9 + 1
                         votes["vote9"] = vote9
 
                     else:
@@ -313,7 +313,15 @@ class Badcomms(commands.Cog):
         print(first)
         print(second)
         print(third)
-        await channel.send(f"{voteable[self.cNames[index]]} has the most votes({x}) for bad comms") #Fix index system, votes doesnt go to the right people
+        count = 0
+        for z, y in voteable.items():
+            print(index, count)
+            print(z)
+            if index == count:
+                await channel.send(f"{z} has the most votes({x}) for bad comms") #Fix index system, votes doesnt go to the right people
+                count = count + 1
+            else:
+                count = count + 1
 
     async def leaderboard_vote(self, x, y):
         global voteable
@@ -333,11 +341,12 @@ class Badcomms(commands.Cog):
             for a, y in z.items():
                 if i == y:
                     if x < 10:
-                        voteable[a] = y
-                        myEmbed.add_field(name=f"{x} {a.split('/')[0]}", value=f"Number of badcomms: {y}", inline=False)
-                        x = x + 1
-
-
+                        if a not in voteable.keys():
+                            voteable[a] = y
+                            myEmbed.add_field(name=f"{x} {a.split('/')[0]}", value=f"Number of badcomms: {y}", inline=False)
+                            x = x + 1
+        for i in voteable:
+            print(i)
         message = await channel.send(embed=myEmbed)
         emojis = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
         global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, vote9, votes, actualMessage
