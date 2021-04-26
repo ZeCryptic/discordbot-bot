@@ -4,7 +4,12 @@ from pathlib import Path
 import datetime
 import os
 import _pickle as pickle
+from emoji import get_emoji_regexp
+import re
 import sys
+
+EMOJI_REGEX = get_emoji_regexp()
+EMOTE_REGEX = r"<:(?P<name>\w+):(?P<id>\d+)>"
 
 """
 TODO:
@@ -21,9 +26,13 @@ Data structure
 
 
 def message_to_dict(message: discord.Message):
+    emojis = re.findall(EMOJI_REGEX, message.content)
+    emotes = re.findall(EMOTE_REGEX, message.content)
+    emotes_ids = [e[1] for e in emotes if e is not None]
     d = {'content': message.content,
          'author': f'{message.author.name}#{message.author.discriminator}',
-         'created_at': message.created_at
+         'created_at': message.created_at,
+         'emojis': emojis + emotes_ids
          }
     return d
 
@@ -36,8 +45,12 @@ class History(commands.Cog):
         self.history_data_path = Path('cogs/History_data')
         self.on_load()
 
+
+    def get_logfile_path(self, guild_id):
+        return self.history_data_path / f'{guild_id}_logs.pkl'
+
     def save_messages(self, guild_id, messages_dict):
-        path = self.history_data_path / f'{guild_id}_logs.pkl'
+        path = self.get_logfile_path(guild_id)
 
         if not os.path.exists(self.history_data_path):
             os.makedirs(self.history_data_path)
@@ -45,7 +58,7 @@ class History(commands.Cog):
             pickle.dump(messages_dict, f)
 
     def load_messages(self, guild_id):
-        path = self.history_data_path / f'{guild_id}_logs.pkl'
+        path = self.get_logfile_path(guild_id)
 
         try:
             with open(path, 'rb') as f:
@@ -87,13 +100,22 @@ class History(commands.Cog):
     def cog_unload(self):
         pass
 
-    @commands.command()
+    @commands.group()
     async def log_messages(self, ctx):
-        embed = discord.Embed(title='Logging all new messages',
-                              timestamp=ctx.message.created_at
-                              )
-        output_message = await ctx.send(embed=embed)
-        await self.log_all_messages(ctx.guild.id, output_message, embed)
+        if ctx.invoked_subcommand is None:
+            embed = discord.Embed(title='Logging all new messages',
+                                  timestamp=ctx.message.created_at
+                                  )
+            output_message = await ctx.send(embed=embed)
+            await self.log_all_messages(ctx.guild.id, output_message, embed)
+
+    @log_messages.command()
+    @commands.is_owner()
+    async def delete(self, ctx):
+        path = self.get_logfile_path(ctx.guild.id)
+        size = os.path.getsize(path)
+        os.remove(path)
+        await ctx.send(f'Deleting log file {path} ({size})')
 
 
 def setup(bot):
