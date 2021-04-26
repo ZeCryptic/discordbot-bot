@@ -6,15 +6,13 @@ from discord.ext import commands, tasks
 from pathlib import Path
 """
 Do next
+Add a way to delete the vote, or/and change it
 Improve help
 Add see next vote to a command and maybe the leaderboard
-Add a timer or something to the vote, so voters dont need to be hard coded
 Maybe remove self.cNames and only use self.comms.keys()
-Change the timer to something other than an hour
-Make leaderboard display rank 1-9 in badcomms, others wont be available for voting
-Also add names in the form that I can use them to give roles
-Add a function to replace names if anybody switches gamertags
 Add so each server can have their own badcomms files
+Add more functions so it is cleaner
+General cleanup
 """
 
 # noinspection PyGlobalUndefined
@@ -109,13 +107,13 @@ class Badcomms(commands.Cog):
             is_name2 = False
             if arg is not None:
                 text_list = arg.split(" ")
+                name = text_list[0].lower().capitalize()
             for i in self.comms.keys():
                 x = i.split("/")
                 if person.lower().capitalize() in x[0]:
                     is_name = True
                     person = i
                 if arg is not None:
-                    name = text_list[0].lower().capitalize()
                     if name in x[0]:
                         name_id = i
                         is_name2 = True
@@ -233,57 +231,60 @@ class Badcomms(commands.Cog):
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, vote9, votes, actualMessage
-        if reaction.message == actualMessage:
-            emoji = reaction.emoji
+        try:
+            if reaction.message == actualMessage:
+                emoji = reaction.emoji
 
-            if user.bot:
-                return
-            else:
-                if user not in voteList:
-                    voteList.append(str(user))
+                if user.bot:
+                    return
+                else:
+                    if user not in voteList:
+                        voteList.append(str(user))
 
-                    if emoji == "0️⃣":
-                        vote0 = vote0 + 1
-                        votes["vote0"] = vote0
+                        if emoji == "0️⃣":
+                            vote0 = vote0 + 1
+                            votes["vote0"] = vote0
 
-                    elif emoji == "1️⃣":
-                        vote1 = vote1 + 1
-                        votes["vote1"] = vote1
+                        elif emoji == "1️⃣":
+                            vote1 = vote1 + 1
+                            votes["vote1"] = vote1
 
-                    elif emoji == "2️⃣":
-                        vote2 = vote2 + 1
-                        votes["vote2"] = vote2
+                        elif emoji == "2️⃣":
+                            vote2 = vote2 + 1
+                            votes["vote2"] = vote2
 
-                    elif emoji == "3️⃣":
-                        vote3 = vote3 + 1
-                        votes["vote3"] = vote3
+                        elif emoji == "3️⃣":
+                            vote3 = vote3 + 1
+                            votes["vote3"] = vote3
 
-                    elif emoji == "4️⃣":
-                        vote4 = vote4 + 1
-                        votes["vote4"] = vote4
+                        elif emoji == "4️⃣":
+                            vote4 = vote4 + 1
+                            votes["vote4"] = vote4
 
-                    elif emoji == "5️⃣":
-                        vote5 = vote5 + 1
-                        votes["vote5"] = vote5
+                        elif emoji == "5️⃣":
+                            vote5 = vote5 + 1
+                            votes["vote5"] = vote5
 
-                    elif emoji == "6️⃣":
-                        vote6 = vote6 + 1
-                        votes["vote6"] = vote6
+                        elif emoji == "6️⃣":
+                            vote6 = vote6 + 1
+                            votes["vote6"] = vote6
 
-                    elif emoji == "7️⃣":
-                        vote7 = vote7 + 1
-                        votes["vote7"] = vote7
+                        elif emoji == "7️⃣":
+                            vote7 = vote7 + 1
+                            votes["vote7"] = vote7
 
-                    elif emoji == "8️⃣":
-                        vote8 = vote8 + 1
-                        votes["vote8"] = vote8
+                        elif emoji == "8️⃣":
+                            vote8 = vote8 + 1
+                            votes["vote8"] = vote8
 
-                    elif emoji == "9️⃣":
-                        vote9 = vote9 + 1
-                        votes["vote9"] = vote9
+                        elif emoji == "9️⃣":
+                            vote9 = vote9 + 1
+                            votes["vote9"] = vote9
 
-                    else:
-                        return
+                        else:
+                            return
+        except:
+            return
 
     async def count_votes(self, x, content):
         global voteList, vote0, vote1, vote2, vote3, vote4, vote5, vote6, vote7, vote8, vote9, votes, actualMessage, voteable
@@ -335,6 +336,10 @@ class Badcomms(commands.Cog):
         global votes
         channel = self.bot.get_guild(int(x)).get_channel(int(content[0]))
         role_ids = [int(content[5]), int(content[6]), int(content[7])]
+        for role in [r for r in self.bot.get_guild(int(x)).roles if r.id in role_ids]:
+            for user in self.bot.get_guild(int(x)).members:
+                if role in user.roles:
+                    await user.remove_roles(role)
         for role in [r for r in self.bot.get_guild(int(x)).roles if r.id == role_ids[place-1]]:
             try:
                 await channel.send(f"{name_id.split('/')[0]} has been placed {place} with votes({votes[number_votes]}) and badcomms({number_of_badcomms}), and is therefore granted the role '{role}' for bad comms")
