@@ -14,7 +14,7 @@ PREFIX = '!' # TODO: Make prefix a variable configurable by the user
 
 def main():
     intents = discord.Intents().all()
-    bot = commands.Bot(command_prefix=commands.when_mentioned_or(PREFIX), intents=intents)
+    bot = commands.Bot(command_prefix=commands.when_mentioned_or(PREFIX), intents=intents, case_insensitive=True)
 
     for cog in utils.get_cogs():
         bot.load_extension(cog)
