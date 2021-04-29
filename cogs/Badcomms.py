@@ -4,16 +4,20 @@ import os.path
 import datetime
 from discord.ext import commands, tasks
 from pathlib import Path
+
 """
 Do next
+Add a function to check if the name is in self.comms, so the code doesnt need to be repeated
 Add a way to delete the vote, or/and change it
 Improve help
 Add see next vote to a command and maybe the leaderboard
+Delete badcomms remarks after vote
 Maybe remove self.cNames and only use self.comms.keys()
 Add so each server can have their own badcomms files
 Add more functions so it is cleaner
 General cleanup
 """
+
 
 # noinspection PyGlobalUndefined
 class Badcomms(commands.Cog):
@@ -23,11 +27,13 @@ class Badcomms(commands.Cog):
         self.comms = None
         self.cNames = []
         self.vote_servers = None
-        self.comms_data_path = Path("cogs/Badcomms_data/comms.json")
         self.comms_data_path2 = Path("cogs/Badcomms_data/vote_servers.json")
+        self.comms_data_path = Path("cogs/Badcomms_data")
         self.show_time.start()
-        self.load_comms()
         self.load_vote_servers()
+
+    def get_file_path(self, guild_id):
+        return self.comms_data_path / f"{guild_id}_comms.json"
 
     def load_vote_servers(self):
         if os.path.isfile(self.comms_data_path2):
@@ -38,32 +44,33 @@ class Badcomms(commands.Cog):
             with open(self.comms_data_path2, "x", encoding='utf-8') as f:
                 json.dump(self.vote_servers, f)
 
-    def load_comms(self):
-        if os.path.isfile(self.comms_data_path):
-            with open(self.comms_data_path, encoding='utf-8') as f:
+    def load_comms(self, guild_id):
+        path = self.get_file_path(guild_id)
+
+        if not os.path.exists(self.comms_data_path):
+            os.makedirs(self.comms_data_path)
+        if os.path.isfile(path):
+            with open(path, encoding='utf-8') as f:
                 self.comms = json.load(f)
         else:
             self.comms = {}
-            with open(self.comms_data_path, "x", encoding='utf-8') as f:
+            with open(path, "x", encoding='utf-8') as f:
                 json.dump(self.comms, f)
-
-        self.cNames = []
-        for i in self.comms.keys():
-            self.cNames.append(i)
 
     def save_servers(self):
         with open(self.comms_data_path2, "w", encoding='utf-8') as f:
             json.dump(self.vote_servers, f, indent=6)
 
-    def save(self):
-        with open(self.comms_data_path, "w", encoding='utf-8') as f:
+    def save(self, guild_id):
+        path = self.get_file_path(guild_id)
+
+        if not os.path.exists(self.comms_data_path):
+            os.makedirs(self.comms_data_path)
+        with open(path, "w", encoding='utf-8') as f:
             json.dump(self.comms, f, indent=6)
 
-        self.cNames = []
-        for i in self.comms.keys():
-            self.cNames.append(i)
-
-    def new_date(self, user_input=None):
+    @staticmethod
+    def new_date(user_input=None):
         global date
         if user_input is None:
             day = int(date[8:10])
@@ -99,134 +106,219 @@ class Badcomms(commands.Cog):
             x = x + 1
         return x
 
-    @commands.command(name='badcomms', help="Type '!badcomms help'")
-    async def bad_comms(self, ctx, person=None, *, arg=None):
-        global date
-        if person is not None:
-            is_name = False
-            is_name2 = False
-            if arg is not None:
-                text_list = arg.split(" ")
-                name = text_list[0].lower().capitalize()
+    def remove_remarks(self, guild_id):
+        self.load_comms(guild_id)
+        for name in self.comms.keys():
+            self.comms[name] = []
+        self.save(guild_id)
+
+    @commands.group(name='badcomms', help="Type '!badcomms'")
+    async def badcomms(self, ctx):
+        self.load_comms(ctx.guild.id)
+        if ctx.invoked_subcommand is None:
+            my_embed = discord.Embed(title=f"Helping {str(ctx.author.display_name)}", color=0x00ff00)
+            my_embed.add_field(name="Add remarks", value="To add remarks type '!badcomms remark [name] [reason]'",
+                               inline=False)
+            my_embed.add_field(name="Delete remarks",
+                               value="To delete remark type '!badcomms del name number'(The number is correlating to that persons list of remarks)",
+                               inline=False)
+            my_embed.add_field(name="See remarks", value="To add remarks type '!badcomms show [name]'", inline=False)
+            my_embed.add_field(name="See leaderboard", value="To see leaderboard type '!badcomms leaderboard'",
+                               inline=False)
+            my_embed.add_field(name="Add person", value="To add person type '!badcomms add [name] [@name]'",
+                               inline=False)
+            my_embed.add_field(name="Delete person", value="To delete person type '!badcomms delete [name]'",
+                               inline=False)
+            my_embed.add_field(name="Add vote",
+                               value="To add a monthly vote type '!badcomms vote add [date] [hours] [@role1] [@role2] [@role3]'", inline=False)
+            my_embed.add_field(name="Delete vote", value="To stop server from monthly votes type '!badcomms vote del'", inline=False)
+            await ctx.send(embed=my_embed)
+
+    @badcomms.command(name='del')
+    async def delete_remark(self, ctx, name=None, index=None):
+        """
+        !badcomms del name index
+        """
+        if index is not None:
+            name = name.lower().capitalize()
+            for name_id in self.comms.keys():
+                name_in_list = name_id.split('/')
+                if name_in_list[0] == name:
+                    try:
+                        index = int(index)
+                        if self.comms[name_id] != [] and len(self.comms[name_id]) - 1 >= index:
+                            await ctx.send(
+                                f"{str(ctx.author.display_name)} removed remark from: {name} '{self.comms[name_id].pop(index)}'")
+                            self.save(ctx.guild.id)
+                        else:
+                            await ctx.send(f"{str(ctx.author.display_name)} that remark does not exist")
+                    except:
+                        await ctx.send("No number detected")
+                    return
+
+    @badcomms.command(name='delete')
+    async def delete_name(self, ctx, name=None):
+        """
+        !badcomms delete name
+        """
+        if name is not None:
+            name = name.lower().capitalize()
+            for name_id in self.comms.keys():
+                name_in_list = name_id.split('/')
+                if name_in_list[0] == name:
+                    await ctx.send(f"{str(ctx.author.display_name)} deleted: {name}")
+                    self.comms.pop(name_id)
+                    self.save(ctx.guild.id)
+                    return
+
+    @badcomms.command(name='add')
+    async def add_name(self, ctx, name=None, user_id=None):
+        """
+        !badcomms add name @
+        """
+        if name is not None and user_id is not None:
+            name = name.lower().capitalize()
+            id_number = user_id[3:-1]
+            parameter = True
+
             for i in self.comms.keys():
-                x = i.split("/")
-                if person.lower().capitalize() in x[0]:
-                    is_name = True
-                    person = i
-                if arg is not None:
-                    if name in x[0]:
-                        name_id = i
-                        is_name2 = True
+                name_id = i.split("/")
+                if name == name_id[0]:
+                    parameter = False
+                elif id == name_id[1]:
+                    parameter = False
 
-            if is_name is True:
-                if arg is not None:
+            if parameter is True and user_id[:3] == "<@!":
+                name_id = f"{name}/{id_number}"
+                self.comms[name_id] = []
+                await ctx.send(f"{ctx.author.display_name} added: {name}")
+                self.save(ctx.guild.id)
+            else:
+                await ctx.send("Error: User might already be added, could be name or @")
 
-                    self.comms[person].append(arg)
-                    self.save()
-                    remarks = self.count_remarks(person)
-                    await ctx.send(
-                        f"{str(ctx.author.display_name)} gave {person.split('/')[0]} an remark because '{arg}', and now has {remarks} remarks.")
-                else:
-                    myEmbed = discord.Embed(
-                        title=f"{str(ctx.author.display_name)} requested badcomms from: {person}",
-                        color=0x00ff00)
-                    x = 0
-                    for i in self.comms[person.lower().capitalize()]:
-                        myEmbed.add_field(name=f"Badcomms nr: {x}", value=i, inline=False)
-                        x = x + 1
-                    await ctx.send(embed=myEmbed)
+    @badcomms.command(name='remark')
+    async def give_remark(self, ctx, name=None, *, remark=None):
+        """
+        !badcomms remark name remark
+        """
+        name = name.lower().capitalize()
+        for name_id in self.comms.keys():
+            name_in_list = name_id.split('/')
+            if name == name_in_list[0] and remark is not None:
+                self.comms[name_id].append(remark)
+                self.save(ctx.guild.id)
+                remarks = self.count_remarks(name_id)
+                await ctx.send(
+                    f"{str(ctx.author.display_name)} gave {name} an remark because '{remark}', and now has {remarks} remarks.")
+                return
 
-            elif person.lower() == "del":
-                if arg is not None:
-                    text_list = arg.split(" ")
-                    if len(text_list) == 2:
-                        if is_name2 is True:
-                            try:
-                                index = int(text_list[1])
-                                if self.comms[name] != [] and len(self.comms[name]) - 1 >= index:
-                                    await ctx.send(
-                                        f"{str(ctx.author.display_name)} removed remark from: {name.split('/')[0]} '{self.comms[name].pop(index)}'")
-                                    self.save()
-                                else:
-                                    await ctx.send(f"{str(ctx.author.display_name)} that remark does not exist")
-                            except:
-                                await ctx.send("No number detected")
-
-            elif person.lower() == "add":
-                parameter = True
-                if arg is not None:
-                    if len(text_list) == 2:
-                        name = text_list[0].lower().capitalize()
-                        id = text_list[1][3:-1]
-                        for i in self.cNames:
-                            x = i.split("/")
-                            if name == x[0]:
-                                parameter = False
-                            elif id == x[1]:
-                                parameter = False
-                        if parameter == True:
-                            if text_list[1][:3] == "<@!":
-                                namep = f"{name}/{text_list[1][3:-1]}"
-                                self.comms[namep] = []
-                                await ctx.send(f"{ctx.author.display_name} added: {name}")
-                                self.save()
-
-            elif person.lower() == "delete":
-                if arg is not None:
-                    if len(text_list) == 1:
-                        if is_name2 is True:
-                            await ctx.send(f"{str(ctx.author.display_name)} deleted: {name}")
-                            self.comms.pop(name_id)
-                            self.save()
-
-            elif person.lower() == "leaderboard":
-                myEmbed = discord.Embed(title=f"{str(ctx.author.display_name)} requested badcommers leaderboard",
-                                        color=0x00ff00)
+    @badcomms.command(name='show')
+    async def show_remarks(self, ctx, name=None):
+        """
+        !badcomms show name
+        """
+        name = name.lower().capitalize()
+        for name_id in self.comms.keys():
+            name_in_list = name_id.split('/')
+            if name == name_in_list[0] and name is not None:
+                my_embed = discord.Embed(
+                    title=f"{str(ctx.author.display_name)} requested badcomms from: {name}",
+                    color=0x00ff00)
                 x = 0
-
-                for person in self.comms:
-                    z = self.count_remarks(person)
-                    myEmbed.add_field(name=f"{x} {person.split('/')[0]}", value=f"Number of badcomms: {z}", inline=False)
+                for remark in self.comms[name_id]:
+                    my_embed.add_field(name=f"Badcomms nr: {x}", value=remark, inline=False)
                     x = x + 1
+                await ctx.send(embed=my_embed)
+                return
 
-                await ctx.send(embed=myEmbed)
+    @badcomms.command(name='leaderboard')
+    async def leaderboard(self, ctx):
+        """
+        !badcomms leaderboard
+        """
+        my_embed = discord.Embed(title=f"{str(ctx.author.display_name)} requested badcommers leaderboard",
+                                 color=0x00ff00)
+        x = 0
+        z = {}
+        displayed = {}
+        for person in self.comms:
+            z[person] = self.count_remarks(person)
 
-            elif person.lower() == "vote": #Need to write a command to show when next vote is due
-                if arg is not None:
-                    if len(text_list) == 5:
-                        try:
-                            print(text_list[2])
-                            day = int(text_list[0])
-                            hours = int(text_list[1])
-                            self.vote_servers[ctx.guild.id] = [ctx.channel.id, self.new_date(day), False, hours, hours, int(text_list[2][3:-1]), int(text_list[3][3:-1]), int(text_list[4][3:-1])]
-                            self.save_servers()
-                        except:
-                            await ctx.send("Needs the date of the vote, not the month, example '!badcomms vote 30' will vote on the 30 th of every month. PS. It will skip February")
+        order = sorted(z.values())
 
-            elif person.lower() == "test":
-                for x, y in self.vote_servers.items():
-                    await self.leaderboard_vote(x,y)
-                    self.vote_servers[x] = [y[0], y[1], True, y[3], y[4], y[5], y[6], y[7]]
+        for i in order[::-1]:
+            for a, y in z.items():
+                if i == y:
+                    if a not in displayed.keys():
+                        displayed[a] = y
+                        my_embed.add_field(name=f"{x} {a.split('/')[0]}", value=f"Number of badcomms: {y}", inline=False)
+                        x = x + 1
+        await ctx.send(embed=my_embed)
+    """
+    @badcomms.command(name='help')
+    async def help(self, ctx):
+        await ctx.send('Help me')
+    """
+    @badcomms.group(name='vote')
+    async def vote(self, ctx):
+        """
+        Add so they can see when next vote is
+        """
+        if ctx.invoked_subcommand is None:
+            for guild_id, content in self.vote_servers.items():
+                if str(guild_id) == str(ctx.guild.id):
+                    await ctx.send(f"The next vote is {content[1][-2:]}-{content[1][5:7]}")
+                    return
 
-            elif person.lower() == "help": #Need to rewrite help to show the new changes
-                if arg is None:
-                    myEmbed = discord.Embed(title=f"Helping {str(ctx.author.display_name)}", color=0x00ff00)
-                    myEmbed.add_field(name="Add remarks", value="To add remarks type '!badcomms person remark'",
-                                      inline=False)
-                    myEmbed.add_field(name="Delete remarks",
-                                      value="To delete remark type '!badcomms del person number'(The number is correlating to that persons list of remarks)",
-                                      inline=False)
-                    myEmbed.add_field(name="See remarks", value="To add remarks type '!badcomms person'", inline=False)
-                    myEmbed.add_field(name="See leaderboard", value="To see leaderboard type '!badcomms leaderboard'",
-                                      inline=False)
-                    myEmbed.add_field(name="Vote badcomms",
-                                      value="To vote on badcomms type '!badcomms leaderboard vote'", inline=False)
-                    myEmbed.add_field(name="Add person", value="To add person type '!badcomms add person'",
-                                      inline=False)
-                    myEmbed.add_field(name="Delete person", value="To delete person type '!badcomms delete person'",
-                                      inline=False)
-                    await ctx.send(embed=myEmbed)
-        await ctx.message.delete()
+    @vote.command(name='add')
+    async def vote_add(self, ctx, day=None, hours=None, role1=None, role2=None, role3=None):
+        """
+        !badcomms vote add date hours role role role
+        """
+        parameter = True
+        for guild_id in self.vote_servers.keys():
+            if str(ctx.guild.id) == str(guild_id):
+                parameter = False
+
+        if role3 is not None:
+            if parameter is True:
+                try:
+
+                    day = int(day)
+                    hours = int(hours)
+                    self.vote_servers[ctx.guild.id] = [ctx.channel.id, self.new_date(day), False, hours, hours,
+                                                       int(role1[3:-1]), int(role2[3:-1]),
+                                                       int(role3[3:-1])]
+                    self.save_servers()
+                    await ctx.send("This server is now registered")
+                except:
+                    await ctx.send("Type '!badcomms help' for more info")
+            else:
+                await ctx.send("This server is already registered")
+        else:
+            await ctx.send("Type '!badcomms help' for more info")
+
+    @vote.command(name='del')
+    async def vote_del(self, ctx):
+        """
+        !badcomms del
+        """
+        parameter = False
+        for guild_id in self.vote_servers.keys():
+            if str(ctx.guild.id) == str(guild_id):
+                parameter = True
+        if parameter is True:
+            if len(self.vote_servers) > 1:
+                self.vote_servers.pop(ctx.guild.id)
+            else:
+                self.vote_servers = {}
+            self.save_servers()
+
+            await ctx.send("This server is now removed from the monthly vote.")
+
+    @badcomms.command(name='test')
+    async def test(self, ctx):
+        self.remove_remarks(ctx.guild.id)
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
@@ -396,7 +488,6 @@ class Badcomms(commands.Cog):
     async def show_time(self):
         global date
         date = str(datetime.datetime.today())
-        #date = str(datetime.date(2021, 4, 25)) #For testing
         for x, y in self.vote_servers.items():
             if str(y[1]) in date:
                 await self.leaderboard_vote(x, y)
@@ -410,10 +501,12 @@ class Badcomms(commands.Cog):
                     self.vote_servers[x] = [y[0], y[1], False, y[4], y[4], y[5], y[6], y[7]]
                     self.save_servers()
                     await self.count_votes(x, y)
+                    self.remove_remarks(x)
 
     @show_time.before_loop
     async def before_show_time(self):
         await self.bot.wait_until_ready()
+
 
 def setup(bot):
     bot.add_cog(Badcomms(bot))
