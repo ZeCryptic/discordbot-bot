@@ -45,7 +45,7 @@ class EmojiStats(commands.Cog):
 
         return embed
 
-    def _find_user_usage(self, ctx, user):
+    def _find_user_usage(self, ctx, user, all_users=False):
         messages_dict = self.load_messages(ctx.guild.id)
         user_name = f'{user.name}#{user.discriminator}'
         emote_usage = {}
@@ -53,9 +53,8 @@ class EmojiStats(commands.Cog):
         total_count = 0
         for channel in messages_dict:
             for message in messages_dict[channel]['messages']:
-                if message['author'] == user_name and not message['content'].startswith(PREFIX):
+                if (message['author'] == user_name and not message['content'].startswith(PREFIX)) or all_users:
                     for emote in message['emojis']:
-
                         emote_usage[emote] = emote_usage.get(emote, 0) + 1
                         total_count += 1
 
@@ -80,10 +79,19 @@ class EmojiStats(commands.Cog):
         is_user = False
         emote_name = None
         emote = None
+        all_users = False
+        user_name = ''
 
-        if user is not None:
+        if arg.lower() == 'all':
+            is_user = True
+            all_users = True
+            leaderboard_thumbnail = ctx.guild.icon_url
+            user = ctx.message.author
+            user_name = ctx.guild.name
+        elif user is not None:
             is_user = True
             leaderboard_thumbnail = user.avatar_url
+            user_name = user.name
         elif arg in EMOJIES:
             emote = arg
             emote_name = emoji.demojize(emote).split(':')[1]
@@ -95,12 +103,12 @@ class EmojiStats(commands.Cog):
             emote = str(emote.id)
 
         if is_user:
-            _usage, usage_count = self._find_user_usage(ctx, user)
+            _usage, usage_count = self._find_user_usage(ctx, user, all_users)
             usage = {}
             for key in _usage.keys():
                 new_key = self._displayable_emote(key)
                 usage[new_key] = _usage[key]
-            title = f'"{user}" has used {usage_count} total emotes:'
+            title = f'"{user_name}" has used {usage_count} total emotes:'
         else:
             usage, usage_count = self._find_emote_usage(ctx, emote)
             title = f'"{emote_name}" has been used {usage_count} total times:'
@@ -112,7 +120,7 @@ class EmojiStats(commands.Cog):
     @usage.error
     async def usage_error(self, ctx, error):
         if isinstance(error, EmojiNotFound):
-            await ctx.send('Emoji or user found. You can only use emojis or users from this server')
+            await ctx.send('Emoji or user not found. You can only use emojis or users from this server')
         else:
             print(error)
             await ctx.send(f'Error: {error}')
