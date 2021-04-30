@@ -8,13 +8,6 @@ from pathlib import Path
 """
 Do next
 Add a function to check if the name is in self.comms, so the code doesnt need to be repeated
-Add a way to delete the vote, or/and change it
-Improve help
-Add see next vote to a command and maybe the leaderboard
-Delete badcomms remarks after vote
-Maybe remove self.cNames and only use self.comms.keys()
-Add so each server can have their own badcomms files
-Add more functions so it is cleaner
 General cleanup
 """
 
@@ -25,7 +18,6 @@ class Badcomms(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.comms = None
-        self.cNames = []
         self.vote_servers = None
         self.comms_data_path2 = Path("cogs/Badcomms_data/vote_servers.json")
         self.comms_data_path = Path("cogs/Badcomms_data")
@@ -120,7 +112,8 @@ class Badcomms(commands.Cog):
             my_embed.add_field(name="Add remarks", value="To add remarks type '!badcomms remark [name] [reason]'",
                                inline=False)
             my_embed.add_field(name="Delete remarks",
-                               value="To delete remark type '!badcomms del name number'(The number is correlating to that persons list of remarks)",
+                               value="To delete remark type '!badcomms del name number'(The number is correlating to "
+                                     "that persons list of remarks)",
                                inline=False)
             my_embed.add_field(name="See remarks", value="To add remarks type '!badcomms show [name]'", inline=False)
             my_embed.add_field(name="See leaderboard", value="To see leaderboard type '!badcomms leaderboard'",
@@ -130,7 +123,8 @@ class Badcomms(commands.Cog):
             my_embed.add_field(name="Delete person", value="To delete person type '!badcomms delete [name]'",
                                inline=False)
             my_embed.add_field(name="Add vote",
-                               value="To add a monthly vote type '!badcomms vote add [date] [hours] [@role1] [@role2] [@role3]'", inline=False)
+                               value="To add a monthly vote type '!badcomms vote add [date] [hours] [@role1] [@role2] "
+                                     "[@role3]'", inline=False)
             my_embed.add_field(name="Delete vote", value="To stop server from monthly votes type '!badcomms vote del'", inline=False)
             await ctx.send(embed=my_embed)
 
@@ -176,6 +170,7 @@ class Badcomms(commands.Cog):
         """
         !badcomms add name @
         """
+        member = ctx.guild.get_member_named(user_id)
         if name is not None and user_id is not None:
             name = name.lower().capitalize()
             id_number = user_id[3:-1]
@@ -185,11 +180,19 @@ class Badcomms(commands.Cog):
                 name_id = i.split("/")
                 if name == name_id[0]:
                     parameter = False
-                elif id == name_id[1]:
+                elif id_number == name_id[1]:
                     parameter = False
+                elif member is not None:
+                    if str(member.id) == name_id[1]:
+                        parameter = False
 
             if parameter is True and user_id[:3] == "<@!":
                 name_id = f"{name}/{id_number}"
+                self.comms[name_id] = []
+                await ctx.send(f"{ctx.author.display_name} added: {name}")
+                self.save(ctx.guild.id)
+            elif parameter is True:
+                name_id = f"{name}/{member.id}"
                 self.comms[name_id] = []
                 await ctx.send(f"{ctx.author.display_name} added: {name}")
                 self.save(ctx.guild.id)
