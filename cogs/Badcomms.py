@@ -7,8 +7,7 @@ from pathlib import Path
 
 """
 Do next
-Add a function to check if the name is in self.comms, so the code doesnt need to be repeated
-General cleanup
+Make the vote function work better with weird dates
 """
 
 
@@ -93,16 +92,21 @@ class Badcomms(commands.Cog):
         return day
 
     def count_remarks(self, person):
-        x = 0
-        for i in self.comms[person]:
-            x = x + 1
-        return x
+        return len(self.comms[person])
 
     def remove_remarks(self, guild_id):
         self.load_comms(guild_id)
         for name in self.comms.keys():
             self.comms[name] = []
         self.save(guild_id)
+
+    def is_name_in_dict(self, name):
+        name = name.lower().capitalize()
+        for name_id in self.comms.keys():
+            name_in_list = name_id.split("/")
+            if name_in_list[0] == name:
+                return True, name_id, name
+        return False, name
 
     @commands.group(name='badcomms', help="Type '!badcomms'")
     async def badcomms(self, ctx):
@@ -134,21 +138,19 @@ class Badcomms(commands.Cog):
         !badcomms del name index
         """
         if index is not None:
-            name = name.lower().capitalize()
-            for name_id in self.comms.keys():
-                name_in_list = name_id.split('/')
-                if name_in_list[0] == name:
-                    try:
-                        index = int(index)
-                        if self.comms[name_id] != [] and len(self.comms[name_id]) - 1 >= index:
-                            await ctx.send(
-                                f"{str(ctx.author.display_name)} removed remark from: {name} '{self.comms[name_id].pop(index)}'")
-                            self.save(ctx.guild.id)
-                        else:
-                            await ctx.send(f"{str(ctx.author.display_name)} that remark does not exist")
-                    except:
-                        await ctx.send("No number detected")
-                    return
+            is_name_and_name_id = self.is_name_in_dict(name)  # Returns True or False to [0], name_id to [1] and name to [3]
+            if is_name_and_name_id[0] is True:
+                try:
+                    index = int(index)
+                    if self.comms[is_name_and_name_id[1]] != [] and len(self.comms[is_name_and_name_id[1]]) - 1 >= index:
+                        await ctx.send(
+                            f"{str(ctx.author.display_name)} removed remark from: {is_name_and_name_id[2]} '{self.comms[is_name_and_name_id[1]].pop(index)}'")
+                        self.save(ctx.guild.id)
+                    else:
+                        await ctx.send(f"{str(ctx.author.display_name)} that remark does not exist")
+                except:
+                    await ctx.send("No number detected")
+                return
 
     @badcomms.command(name='delete')
     async def delete_name(self, ctx, name=None):
@@ -156,14 +158,12 @@ class Badcomms(commands.Cog):
         !badcomms delete name
         """
         if name is not None:
-            name = name.lower().capitalize()
-            for name_id in self.comms.keys():
-                name_in_list = name_id.split('/')
-                if name_in_list[0] == name:
-                    await ctx.send(f"{str(ctx.author.display_name)} deleted: {name}")
-                    self.comms.pop(name_id)
-                    self.save(ctx.guild.id)
-                    return
+            is_name_and_name_id = self.is_name_in_dict(name)  # Returns True or False to [0], name_id to [1] and name to [3]
+            if is_name_and_name_id[0] is True:
+                await ctx.send(f"{str(ctx.author.display_name)} deleted: {is_name_and_name_id[2]}")
+                self.comms.pop(is_name_and_name_id[1])
+                self.save(ctx.guild.id)
+                return
 
     @badcomms.command(name='add')
     async def add_name(self, ctx, name=None, user_id=None):
@@ -204,15 +204,14 @@ class Badcomms(commands.Cog):
         """
         !badcomms remark name remark
         """
-        name = name.lower().capitalize()
-        for name_id in self.comms.keys():
-            name_in_list = name_id.split('/')
-            if name == name_in_list[0] and remark is not None:
-                self.comms[name_id].append(remark)
+        if remark is not None:
+            is_name_and_name_id = self.is_name_in_dict(name)  # Returns True or False to [0], name_id to [1] and name to [3]
+            if is_name_and_name_id[0] is True:
+                self.comms[is_name_and_name_id[1]].append(remark)
                 self.save(ctx.guild.id)
-                remarks = self.count_remarks(name_id)
+                remarks = self.count_remarks(is_name_and_name_id[1])
                 await ctx.send(
-                    f"{str(ctx.author.display_name)} gave {name} an remark because '{remark}', and now has {remarks} remarks.")
+                    f"{str(ctx.author.display_name)} gave {is_name_and_name_id[2]} an remark because '{remark}', and now has {remarks} remarks.")
                 return
 
     @badcomms.command(name='show')
@@ -220,15 +219,14 @@ class Badcomms(commands.Cog):
         """
         !badcomms show name
         """
-        name = name.lower().capitalize()
-        for name_id in self.comms.keys():
-            name_in_list = name_id.split('/')
-            if name == name_in_list[0] and name is not None:
+        if name is not None:
+            is_name_and_name_id = self.is_name_in_dict(name)  # Returns True or False to [0], name_id to [1] and name to [3]
+            if is_name_and_name_id[0] is True:
                 my_embed = discord.Embed(
-                    title=f"{str(ctx.author.display_name)} requested badcomms from: {name}",
+                    title=f"{str(ctx.author.display_name)} requested badcomms from: {is_name_and_name_id[2]}",
                     color=0x00ff00)
                 x = 0
-                for remark in self.comms[name_id]:
+                for remark in self.comms[is_name_and_name_id[1]]:
                     my_embed.add_field(name=f"Badcomms nr: {x}", value=remark, inline=False)
                     x = x + 1
                 await ctx.send(embed=my_embed)
