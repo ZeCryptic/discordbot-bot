@@ -5,13 +5,6 @@ import discord
 from discord.ext import commands
 from pathlib import Path
 
-"""
-TO DO
-General cleanup
-Add so if there is no quote from user, user doesnt get picked for random quote
-Make it so the add can add a new person with or without quote or add a quote to existing person
-"""
-
 
 class Quotes(commands.Cog):
 
@@ -151,29 +144,6 @@ class Quotes(commands.Cog):
         my_embed.add_field(name="Delete person", value='To delete person type "!quote delete [person]"', inline=False)
         my_embed.add_field(name="See all who can be quoted", value='To see all who can be quoted type "!quote everyone"')
         await ctx.send(embed=my_embed)
-
-    @quote.command(name="transfer")
-    async def transfer_old_quotes(self, ctx):
-        if os.path.isfile(Path("cogs/Quotes_data/quote.json")):
-            with open(Path("cogs/Quotes_data/quote.json"), encoding='utf-8') as f:
-                self.quotes = json.load(f)
-        else:
-            self.quotes = {}
-            with open(Path("cogs/Quotes_data/quote.json"), "x", encoding='utf-8') as f:
-                json.dump(self.quotes, f)
-
-        new_quotes = {}
-        for x in self.quotes.keys():
-            new_quotes[x] = []
-            for i in self.quotes[x]:
-                new_quotes[x].append(i[1:])
-
-        path = self.quotes_data_path / f"{ctx.guild.id}_quotes.json"
-
-        if not os.path.exists(self.quotes_data_path):
-            os.makedirs(self.quotes_data_path)
-        with open(path, "w", encoding='utf-8') as f:
-            json.dump(new_quotes, f, indent=6)
 
     async def random_quote(self, ctx, number_of_tries=0):
         if number_of_tries < 9:
