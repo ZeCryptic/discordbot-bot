@@ -442,6 +442,7 @@ class Badcomms(commands.Cog):
 
     async def leaderboard_vote(self, x, y):
         global voteable
+        self.load_comms(x)
         channel = self.bot.get_guild(int(x)).get_channel(int(y[0]))
 
         myEmbed = discord.Embed(title=f"Its time for the badcommers vote",
