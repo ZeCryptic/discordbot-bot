@@ -8,6 +8,7 @@ from pathlib import Path
 """
 Do next
 Make the vote function work better with weird dates
+Make the vote show correlating emojis
 """
 
 
@@ -116,7 +117,7 @@ class Badcomms(commands.Cog):
             my_embed.add_field(name="Add remarks", value="To add remarks type '!badcomms remark [name] [reason]'",
                                inline=False)
             my_embed.add_field(name="Delete remarks",
-                               value="To delete remark type '!badcomms del name number'(The number is correlating to "
+                               value="To delete remark type '!badcomms del [name] [number]'(The number is correlating to "
                                      "that persons list of remarks)",
                                inline=False)
             my_embed.add_field(name="See remarks", value="To add remarks type '!badcomms show [name]'", inline=False)
@@ -319,7 +320,7 @@ class Badcomms(commands.Cog):
 
     @badcomms.command(name='test')
     async def test(self, ctx):
-        self.remove_remarks(ctx.guild.id)
+        await ctx.send(self.vote_servers)
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
