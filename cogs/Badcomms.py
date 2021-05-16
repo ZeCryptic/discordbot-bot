@@ -321,6 +321,7 @@ class Badcomms(commands.Cog):
     @badcomms.command(name='test')
     async def test(self, ctx):
         await ctx.send(self.vote_servers)
+        await ctx.send(self.comms)
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
