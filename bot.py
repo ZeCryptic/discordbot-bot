@@ -17,7 +17,10 @@ def main():
     bot = commands.Bot(command_prefix=commands.when_mentioned_or(PREFIX), intents=intents, case_insensitive=True)
 
     for cog in utils.get_cogs():
-        bot.load_extension(cog)
+        try:
+            bot.load_extension(cog)
+        except Exception as e:
+            print(f'Error loading cog "{cog}": {e}')
 
     @bot.event
     async def on_ready():
