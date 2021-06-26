@@ -53,6 +53,12 @@ class Configs(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    @dev.command()
+    async def install(self, ctx):
+        stream = os.popen('python3 -m pip install -r requirements.txt')
+        output = stream.read()
+        await ctx.send(output)
+
     @dev.error
     async def dev_error(self, ctx, error):
         if isinstance(error, NotOwner):
