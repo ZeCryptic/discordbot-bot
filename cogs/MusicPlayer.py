@@ -14,10 +14,6 @@ yt_format_info = {
 }
 
 
-def user_is_connected(ctx):
-    return ctx.author.voice.channel is not None
-
-
 class MusicPlayer(commands.Cog):
 
     def __init__(self, bot):
@@ -53,9 +49,12 @@ class MusicPlayer(commands.Cog):
                            "'<prefix>help music' for list of music related commands")
 
     @music.command(help="Searches youtube for a video and plays the audio source or adds it to the queue"
-                           ". Usage: !play [search/link]")
-    @commands.check(user_is_connected)
+                        ". Usage: !play [search/link]")
     async def play(self, ctx, *user_input):
+        if ctx.author.voice is None:
+            await ctx.send('You need to be in a voice channel to use this command')
+            return
+
         user_input = ' '.join(user_input)
         if not self.voice_connected():
             await self.join(ctx)
@@ -118,7 +117,7 @@ class MusicPlayer(commands.Cog):
         embed = discord.Embed(title='Music player queue')
         embed.description = f'**{len(self.queue)}** in queue.\n Currently playing: `{self.currently_playing_info["title"]}`'
         for i in range(10):
-            i += (page - 1)*10
+            i += (page - 1) * 10
             if i > len(self.queue) - 1:
                 break
             info = self.queue[i]
