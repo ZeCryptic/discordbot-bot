@@ -46,7 +46,13 @@ class MusicPlayer(commands.Cog):
         video_info = self.queue.pop(0)
         self.play_audio(video_info)
 
-    @commands.command(help="Searches youtube for a video and plays the audio source or adds it to the queue"
+    @commands.group(help="Music commands which lets the user play audio from youtube sources in a voice channel")
+    async def music(self, ctx):
+        if ctx.invoked_subcommand is None:
+            await ctx.send("Type '<prefix>music play [search]/[link]' to play music in your voice channel or"
+                           "'<prefix>help music' for list of music related commands")
+
+    @music.command(help="Searches youtube for a video and plays the audio source or adds it to the queue"
                            ". Usage: !play [search/link]")
     @commands.check(user_is_connected)
     async def play(self, ctx, *user_input):
@@ -66,42 +72,42 @@ class MusicPlayer(commands.Cog):
             self.play_audio(video_info)
             await ctx.send(f'Now playing: `{video_title}`')
 
-    @commands.command(help="Makes the bot join the voice channel of the caller")
+    @music.command(help="Makes the bot join the voice channel of the caller")
     async def join(self, ctx):
         self.voice_connection = await ctx.author.voice.channel.connect()
         await ctx.send(f'Joined voice channel: `{ctx.author.voice.channel.name}`')
 
-    @commands.command(help="Pauses audio playback")
+    @music.command(help="Pauses audio playback")
     async def pause(self, ctx):
         self.voice_connection.pause()
         await ctx.send('⏸ Pausing music')
 
-    @commands.command(help="Resumes audio playback")
+    @music.command(help="Resumes audio playback")
     async def resume(self, ctx):
         self.voice_connection.resume()
         await ctx.send('▶️ Resuming music')
 
-    @commands.command(help="Stops audio playback and clears the queue")
+    @music.command(help="Stops audio playback and clears the queue")
     async def stop(self, ctx):
         self.queue = []
         self.currently_playing_info = None
         self.voice_connection.stop()
         if ctx: await ctx.send('⏹️ Stopping music and clearing queue')
 
-    @commands.command()
+    @music.command()
     async def seek(self, ctx):
         pass
 
-    @commands.command(help="Skips to the next in queue")
+    @music.command(help="Skips to the next in queue")
     async def skip(self, ctx):
         self.voice_connection.stop()
         await ctx.send('⏭️ Skipping to next in queue')
 
-    @commands.command()
+    @music.command()
     async def np(self, ctx):
         pass
 
-    @commands.command(help="Shows the audio queue. Usage: !queue [page number](optional)")
+    @music.command(help="Shows the audio queue. Usage: !queue [page number](optional)")
     async def queue(self, ctx, page: typing.Optional[int] = 1):
         pages = (len(self.queue) // 10) + 1
         if page > pages:
@@ -124,11 +130,11 @@ class MusicPlayer(commands.Cog):
         embed.set_footer(text=f'Page {page}/{pages}')
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @music.command()
     async def clear(self, ctx):
         pass
 
-    @commands.command(help="Leaves the connected voice channel and clears the queue")
+    @music.command(help="Leaves the connected voice channel and clears the queue")
     async def leave(self, ctx):
         await self.stop(None)
         await self.voice_connection.disconnect()
