@@ -14,6 +14,21 @@ yt_format_info = {
 }
 
 
+class UserNotInVoiceChannel(commands.CheckFailure):
+    pass
+
+
+class BotNotInVoiceChannel(commands.CheckFailure):
+    pass
+
+
+def user_is_in_voice(ctx):
+    if ctx.author.voice is not None:
+        return True
+    else:
+        raise UserNotInVoiceChannel('You need to be in a voice channel to use this command')
+
+
 class MusicPlayer(commands.Cog):
 
     def __init__(self, bot):
@@ -22,8 +37,13 @@ class MusicPlayer(commands.Cog):
         self.voice_connection = None
         self.currently_playing_info = None
 
-    def voice_connected(self):
-        return self.voice_connection is not None
+    async def check_bot_voice_connected(self, ctx):
+        #TODO: Find a way to make this into a check decorator
+        if self.voice_connection is not None:
+            return True
+        else:
+            await ctx.send('Bot needs to be in a voice channel to use this command')
+            return False
 
     def get_yt_video_info(self, search):
         with yt.YoutubeDL(yt_format_info) as yt_dl:
@@ -43,6 +63,7 @@ class MusicPlayer(commands.Cog):
         self.play_audio(video_info)
 
     @commands.group(help="Music commands which lets the user play audio from youtube sources in a voice channel")
+    @commands.check(user_is_in_voice)
     async def music(self, ctx):
         if ctx.invoked_subcommand is None:
             await ctx.send("Type '<prefix>music play [search]/[link]' to play music in your voice channel or"
@@ -51,12 +72,12 @@ class MusicPlayer(commands.Cog):
     @music.command(help="Searches youtube for a video and plays the audio source or adds it to the queue"
                         ". Usage: !play [search/link]")
     async def play(self, ctx, *user_input):
-        if ctx.author.voice is None:
-            await ctx.send('You need to be in a voice channel to use this command')
+        if not user_input:
+            await ctx.send('You need to provide a search term or a link to a youtube video')
             return
 
         user_input = ' '.join(user_input)
-        if not self.voice_connected():
+        if self.voice_connection is None:
             await self.join(ctx)
 
         await ctx.send(f'Searching for: `{user_input}`')
@@ -73,21 +94,30 @@ class MusicPlayer(commands.Cog):
 
     @music.command(help="Makes the bot join the voice channel of the caller")
     async def join(self, ctx):
+        if self.voice_connection is not None:
+            await self.leave(ctx)
+
         self.voice_connection = await ctx.author.voice.channel.connect()
         await ctx.send(f'Joined voice channel: `{ctx.author.voice.channel.name}`')
 
     @music.command(help="Pauses audio playback")
     async def pause(self, ctx):
+        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+            return
         self.voice_connection.pause()
         await ctx.send('⏸ Pausing music')
 
     @music.command(help="Resumes audio playback")
     async def resume(self, ctx):
+        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+            return
         self.voice_connection.resume()
         await ctx.send('▶️ Resuming music')
 
     @music.command(help="Stops audio playback and clears the queue")
     async def stop(self, ctx):
+        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+            return
         self.queue = []
         self.currently_playing_info = None
         self.voice_connection.stop()
@@ -99,6 +129,8 @@ class MusicPlayer(commands.Cog):
 
     @music.command(help="Skips to the next in queue")
     async def skip(self, ctx):
+        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+            return
         self.voice_connection.stop()
         await ctx.send('⏭️ Skipping to next in queue')
 
@@ -108,6 +140,8 @@ class MusicPlayer(commands.Cog):
 
     @music.command(help="Shows the audio queue. Usage: !queue [page number](optional)")
     async def queue(self, ctx, page: typing.Optional[int] = 1):
+        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+            return
         pages = (len(self.queue) // 10) + 1
         if page > pages:
             page = pages
@@ -135,10 +169,22 @@ class MusicPlayer(commands.Cog):
 
     @music.command(help="Leaves the connected voice channel and clears the queue")
     async def leave(self, ctx):
+        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+            return
         await self.stop(None)
         await self.voice_connection.disconnect()
-        await ctx.send('Leaving voice channel')
+        await ctx.send(f'Leaving voice channel `{self.voice_connection.channel.name}` and clearing queue')
         self.voice_connection = None
+
+    @music.error
+    async def music_error(self, ctx, error):
+        if isinstance(error, UserNotInVoiceChannel):
+            await ctx.send(error)
+        if isinstance(error, BotNotInVoiceChannel):
+            await ctx.send(error)
+        else:
+            print(f'An unexpected error occurred from the command {ctx.message}: {error}')
+            await ctx.send('There was an error executing this command. Contact a developer if the problem persists')
 
     def cog_unload(self):
         # TODO: Find a way to disconnect bot when cog is unloaded without it being a coroutine
