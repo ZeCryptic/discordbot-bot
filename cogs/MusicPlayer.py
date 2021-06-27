@@ -1,10 +1,10 @@
 from discord.ext import commands
 from discord import FFmpegPCMAudio
 from shutil import which
+import typing
 import discord
 import datetime
 import youtube_dl as yt
-
 
 yt_format_info = {
     'format': 'bestaudio/best',
@@ -46,7 +46,8 @@ class MusicPlayer(commands.Cog):
         video_info = self.queue.pop(0)
         self.play_audio(video_info)
 
-    @commands.command()
+    @commands.command(help="Searches youtube for a video and plays the audio source or adds it to the queue"
+                           ". Usage: !play [search/link]")
     @commands.check(user_is_connected)
     async def play(self, ctx, *user_input):
         user_input = ' '.join(user_input)
@@ -65,22 +66,22 @@ class MusicPlayer(commands.Cog):
             self.play_audio(video_info)
             await ctx.send(f'Now playing: `{video_title}`')
 
-    @commands.command()
+    @commands.command(help="Makes the bot join the voice channel of the caller")
     async def join(self, ctx):
         self.voice_connection = await ctx.author.voice.channel.connect()
         await ctx.send(f'Joined voice channel: `{ctx.author.voice.channel.name}`')
 
-    @commands.command()
+    @commands.command(help="Pauses audio playback")
     async def pause(self, ctx):
         self.voice_connection.pause()
         await ctx.send('⏸ Pausing music')
 
-    @commands.command()
+    @commands.command(help="Resumes audio playback")
     async def resume(self, ctx):
         self.voice_connection.resume()
         await ctx.send('▶️ Resuming music')
 
-    @commands.command()
+    @commands.command(help="Stops audio playback and clears the queue")
     async def stop(self, ctx):
         self.queue = []
         self.currently_playing_info = None
@@ -91,7 +92,7 @@ class MusicPlayer(commands.Cog):
     async def seek(self, ctx):
         pass
 
-    @commands.command()
+    @commands.command(help="Skips to the next in queue")
     async def skip(self, ctx):
         self.voice_connection.stop()
         await ctx.send('⏭️ Skipping to next in queue')
@@ -100,24 +101,34 @@ class MusicPlayer(commands.Cog):
     async def np(self, ctx):
         pass
 
-    @commands.command()
-    async def queue(self, ctx):
+    @commands.command(help="Shows the audio queue. Usage: !queue [page number](optional)")
+    async def queue(self, ctx, page: typing.Optional[int] = 1):
+        pages = (len(self.queue) // 10) + 1
+        if page > pages:
+            page = pages
+        elif page < 1:
+            page = 1
+
         embed = discord.Embed(title='Music player queue')
-        embed.description = f'**{len(self.queue)}** in queue. Currently playing: `{self.currently_playing_info["title"]}`'
-        for i, info in enumerate(self.queue):
-            field_name = f'{i+1}: `{info["title"]}`'
+        embed.description = f'**{len(self.queue)}** in queue.\n Currently playing: `{self.currently_playing_info["title"]}`'
+        for i in range(10):
+            i += (page - 1)*10
+            if i > len(self.queue) - 1:
+                break
+            info = self.queue[i]
+            field_name = f'{i + 1}: `{info["title"]}`'
             field_value = f' {datetime.timedelta(seconds=info["duration"])} | ' \
                           f'👍 {info["like_count"]} 👎 {info["dislike_count"]} | ' \
                           f'📈 {info["view_count"]}'
             embed.add_field(name=field_name, value=field_value, inline=False)
-
+        embed.set_footer(text=f'Page {page}/{pages}')
         await ctx.send(embed=embed)
 
     @commands.command()
     async def clear(self, ctx):
         pass
 
-    @commands.command()
+    @commands.command(help="Leaves the connected voice channel and clears the queue")
     async def leave(self, ctx):
         await self.stop(None)
         await self.voice_connection.disconnect()

@@ -73,7 +73,8 @@ class EmojiStats(commands.Cog):
 
         return user_emote_usage, total_count
 
-    @commands.command()
+    @commands.command(help="Lists the emoji/emote usage in the server. Requires messages to be logged by !log_messages. "
+                           "Usage: !usage [[user]/[emote]/[emoji]/all]")
     async def usage(self, ctx, arg):
         user = ctx.guild.get_member_named(arg)
         is_user = False

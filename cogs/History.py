@@ -1,12 +1,10 @@
 from discord.ext import commands
 import discord
 from pathlib import Path
-import datetime
 import os
 import _pickle as pickle
 from emoji import get_emoji_regexp
 import re
-import sys
 
 EMOJI_REGEX = get_emoji_regexp()
 EMOTE_REGEX = r"<:(?P<name>\w+):(?P<id>\d+)>"
@@ -100,7 +98,7 @@ class History(commands.Cog):
     def cog_unload(self):
         pass
 
-    @commands.group()
+    @commands.group(help="Logs all messages in the discord server. Message log is used by other commands")
     async def log_messages(self, ctx):
         if ctx.invoked_subcommand is None:
             embed = discord.Embed(title='Logging all new messages',
@@ -109,7 +107,7 @@ class History(commands.Cog):
             output_message = await ctx.send(embed=embed)
             await self.log_all_messages(ctx.guild.id, output_message, embed)
 
-    @log_messages.command()
+    @log_messages.command(help="Deletes the message log file of this server. Only accessible by bot owners")
     @commands.is_owner()
     async def delete(self, ctx):
         path = self.get_logfile_path(ctx.guild.id)
