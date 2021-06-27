@@ -180,10 +180,10 @@ class MusicPlayer(commands.Cog):
     async def music_error(self, ctx, error):
         if isinstance(error, UserNotInVoiceChannel):
             await ctx.send(error)
-        if isinstance(error, BotNotInVoiceChannel):
+        elif isinstance(error, BotNotInVoiceChannel):
             await ctx.send(error)
         else:
-            print(f'An unexpected error occurred from the command {ctx.message}: {error}')
+            print(f'An unexpected error occurred from the command {ctx.message.content}: {error}')
             await ctx.send('There was an error executing this command. Contact a developer if the problem persists')
 
     def cog_unload(self):
