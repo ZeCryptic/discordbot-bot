@@ -57,6 +57,7 @@ class MusicPlayer(commands.Cog):
 
     def play_next_in_queue(self, error):
         if not self.queue:
+            self.currently_playing_info = None
             return
 
         video_info = self.queue.pop(0)
@@ -142,6 +143,10 @@ class MusicPlayer(commands.Cog):
     async def queue(self, ctx, page: typing.Optional[int] = 1):
         if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
             return
+        if not self.queue or not self.currently_playing_info:
+            await ctx.send('Queue is empty')
+            return
+
         pages = (len(self.queue) // 10) + 1
         if page > pages:
             page = pages
