@@ -34,8 +34,7 @@ class Basics(commands.Cog):
 
     @commands.command(help='The bot responds with "Pong!" and the response latency')
     async def ping(self, ctx):
-        time_delta = datetime.datetime.now() - ctx.message.created_at
-        await ctx.send(f'Pong! `({time_delta.microseconds * 2 // 1000} ms)`')
+        await ctx.send(f'Pong! `({int(self.bot.latency * 1000)} ms)`')
 
 
 def setup(bot):
