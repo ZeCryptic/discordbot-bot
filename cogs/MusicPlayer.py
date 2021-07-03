@@ -78,7 +78,6 @@ class MusicPlayer(commands.Cog):
 
         progress_bar = ['▬']*40
         time_placement = int((time_stamp.seconds / int(info["duration"])) * len(progress_bar))
-        print(time_placement)
         progress_bar.insert(time_placement, '🔘')
         embed.add_field(name='🎵 Now playing: 🎵', value=f"`{''.join(progress_bar)}`\n"
                                                          f"{str(time_stamp).split('.')[0]} / {duration}")
