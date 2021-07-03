@@ -36,9 +36,11 @@ class MusicPlayer(commands.Cog):
         self.bot = bot
         self.voice_connection = None
         self.currently_playing_info = None
+        self.start_time = None
+        self.s_time_delta = datetime.timedelta(0)
 
     async def check_bot_voice_connected(self, ctx):
-        #TODO: Find a way to make this into a check decorator
+        # TODO: Find a way to make this into a check decorator
         if self.voice_connection is not None:
             return True
         else:
@@ -54,6 +56,7 @@ class MusicPlayer(commands.Cog):
         audio_url = video_info['url']
         self.currently_playing_info = video_info
         self.voice_connection.play(FFmpegPCMAudio(audio_url), after=self.play_next_in_queue)
+        self._start_time()
 
     def play_next_in_queue(self, error):
         if not self.queue:
@@ -62,6 +65,40 @@ class MusicPlayer(commands.Cog):
 
         video_info = self.queue.pop(0)
         self.play_audio(video_info)
+
+    def _get_video_information_embed(self, info, time_stamp=None):
+        duration = datetime.timedelta(seconds=info["duration"])
+        embed = discord.Embed(title=info['title'], url=f'https://www.youtube.com/watch?v={info["id"]}')
+        embed.set_image(url=f'http://img.youtube.com/vi/{info["id"]}/mqdefault.jpg')
+        embed.set_footer(text=f'{duration} | ' \
+                              f'👍 {info["like_count"]} 👎 {info["dislike_count"]} | ' \
+                              f'📈 {info["view_count"]}')
+        if not time_stamp:
+            return embed
+
+        progress_bar = ['▬']*40
+        time_placement = int((time_stamp.seconds / int(info["duration"])) * len(progress_bar))
+        print(time_placement)
+        progress_bar.insert(time_placement, '🔘')
+        embed.add_field(name='🎵 Now playing: 🎵', value=f"`{''.join(progress_bar)}`\n"
+                                                         f"{str(time_stamp).split('.')[0]} / {duration}")
+        return embed
+
+    def _start_time(self):
+        self.start_time = datetime.datetime.now()
+        self.s_time_delta = datetime.timedelta(0)
+
+    def _pause_time(self):
+        self.s_time_delta += datetime.datetime.now() - self.start_time
+
+    def _resume_time(self):
+        self.start_time = datetime.datetime.now()
+
+    def _get_time(self):
+        if self.voice_connection.is_paused():
+            return self.s_time_delta
+        else:
+            return self.s_time_delta + (datetime.datetime.now() - self.start_time)
 
     @commands.group(help="Music commands which lets the user play audio from youtube sources in a voice channel")
     @commands.check(user_is_in_voice)
@@ -81,9 +118,9 @@ class MusicPlayer(commands.Cog):
         if self.voice_connection is None:
             await self.join(ctx)
 
-        await ctx.send(f'Searching for: `{user_input}`')
         video_info = self.get_yt_video_info(user_input)
         video_title = video_info['title']
+        await ctx.send(f'Searched for `{user_input}` and found:', embed=self._get_video_information_embed(video_info))
 
         if self.voice_connection.is_playing() or self.voice_connection.is_paused():
             self.queue.append(video_info)
@@ -103,45 +140,59 @@ class MusicPlayer(commands.Cog):
 
     @music.command(help="Pauses audio playback")
     async def pause(self, ctx):
-        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+        if not await self.check_bot_voice_connected(ctx):
+            return
+        if self.voice_connection.is_paused():
+            await ctx.send('Bot is already paused')
             return
         self.voice_connection.pause()
+        self._pause_time()
         await ctx.send('⏸ Pausing music')
 
     @music.command(help="Resumes audio playback")
     async def resume(self, ctx):
-        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+        if not await self.check_bot_voice_connected(ctx):
+            return
+        if not self.voice_connection.is_paused():
+            ctx.send('The bot is not paused')
             return
         self.voice_connection.resume()
+        self._resume_time()
         await ctx.send('▶️ Resuming music')
 
     @music.command(help="Stops audio playback and clears the queue")
     async def stop(self, ctx):
-        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+        if not await self.check_bot_voice_connected(ctx):
             return
         self.queue = []
         self.currently_playing_info = None
         self.voice_connection.stop()
         if ctx: await ctx.send('⏹️ Stopping music and clearing queue')
 
-    @music.command()
+    @music.command(help="Skips to a certain part of the video. NOT IMPLEMENTED YET")
     async def seek(self, ctx):
         pass
 
     @music.command(help="Skips to the next in queue")
     async def skip(self, ctx):
-        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+        if not await self.check_bot_voice_connected(ctx):
             return
         self.voice_connection.stop()
         await ctx.send('⏭️ Skipping to next in queue')
 
-    @music.command()
+    @music.command(help="Displays the information of the currently playing video")
     async def np(self, ctx):
-        pass
+        if not await self.check_bot_voice_connected(ctx):
+            return
+        if not self.voice_connection.is_playing() and not self.voice_connection.is_paused():
+            await ctx.send('Nothing is playing at the moment')
+            return
+        embed = self._get_video_information_embed(self.currently_playing_info, time_stamp=self._get_time())
+        await ctx.send(f'', embed=embed)
 
     @music.command(help="Shows the audio queue. Usage: !queue [page number](optional)")
     async def queue(self, ctx, page: typing.Optional[int] = 1):
-        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+        if not await self.check_bot_voice_connected(ctx):
             return
         if not self.queue or not self.currently_playing_info:
             await ctx.send('Queue is empty')
@@ -168,13 +219,9 @@ class MusicPlayer(commands.Cog):
         embed.set_footer(text=f'Page {page}/{pages}')
         await ctx.send(embed=embed)
 
-    @music.command()
-    async def clear(self, ctx):
-        pass
-
     @music.command(help="Leaves the connected voice channel and clears the queue")
     async def leave(self, ctx):
-        if not await self.check_bot_voice_connected(ctx):       # Temporary check function. Should be a decorator
+        if not await self.check_bot_voice_connected(ctx):
             return
         await self.stop(None)
         await self.voice_connection.disconnect()
