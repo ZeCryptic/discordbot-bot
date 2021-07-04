@@ -79,7 +79,8 @@ class MusicPlayer(commands.Cog):
         progress_bar = ['▬']*20
         time_placement = int((time_stamp.seconds / int(info["duration"])) * len(progress_bar))
         progress_bar.insert(time_placement, '🔘')
-        embed.add_field(name='🎵 Now playing: 🎵', value=f"`{''.join(progress_bar)}`\n"
+        field_name = '🎵 Now playing: 🎵' if self.voice_connection.is_playing() else '⏸️ Music Paused'
+        embed.add_field(name=field_name, value=f"`{''.join(progress_bar)}`\n"
                                                          f"{str(time_stamp).split('.')[0]} / {duration}")
         return embed
 
