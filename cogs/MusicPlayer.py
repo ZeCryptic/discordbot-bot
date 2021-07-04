@@ -76,7 +76,7 @@ class MusicPlayer(commands.Cog):
         if not time_stamp:
             return embed
 
-        progress_bar = ['▬']*40
+        progress_bar = ['▬']*20
         time_placement = int((time_stamp.seconds / int(info["duration"])) * len(progress_bar))
         progress_bar.insert(time_placement, '🔘')
         embed.add_field(name='🎵 Now playing: 🎵', value=f"`{''.join(progress_bar)}`\n"
