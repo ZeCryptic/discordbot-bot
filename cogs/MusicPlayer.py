@@ -1,4 +1,5 @@
 from discord.ext import commands
+from discord.ext.commands.errors import MissingRequiredArgument, BadArgument
 from discord import FFmpegPCMAudio
 from shutil import which
 import typing
@@ -9,8 +10,8 @@ import youtube_dl as yt
 yt_format_info = {
     'format': 'bestaudio/best',
     'noplaylist': True,
-    'quiet': True,
-    'no_warnings': True,
+    'quiet': False,
+    'no_warnings': False,
 }
 
 
@@ -52,11 +53,13 @@ class MusicPlayer(commands.Cog):
             info = yt_dl.extract_info(f'ytsearch:{search}', download=False)['entries'][0]
             return info
 
-    def play_audio(self, video_info):
+    def play_audio(self, video_info, time_seconds: int = 0):
         audio_url = video_info['url']
         self.currently_playing_info = video_info
-        self.voice_connection.play(FFmpegPCMAudio(audio_url), after=self.play_next_in_queue)
-        self._start_time()
+        timestamp = datetime.timedelta(seconds=time_seconds)
+        self.voice_connection.play(FFmpegPCMAudio(audio_url, before_options=f'-ss {timestamp}'),
+                                   after=self.play_next_in_queue)
+        self._start_time(start_seconds=time_seconds)
 
     def play_next_in_queue(self, error):
         if not self.queue:
@@ -76,17 +79,17 @@ class MusicPlayer(commands.Cog):
         if not time_stamp:
             return embed
 
-        progress_bar = ['▬']*20
+        progress_bar = ['▬'] * 20
         time_placement = int((time_stamp.seconds / int(info["duration"])) * len(progress_bar))
         progress_bar.insert(time_placement, '🔘')
         field_name = '🎵 Now playing: 🎵' if self.voice_connection.is_playing() else '⏸️ Music Paused'
         embed.add_field(name=field_name, value=f"`{''.join(progress_bar)}`\n"
-                                                         f"{str(time_stamp).split('.')[0]} / {duration}")
+                                               f"{str(time_stamp).split('.')[0]} / {duration}")
         return embed
 
-    def _start_time(self):
+    def _start_time(self, start_seconds: int = 0):
         self.start_time = datetime.datetime.now()
-        self.s_time_delta = datetime.timedelta(0)
+        self.s_time_delta = datetime.timedelta(seconds=start_seconds)
 
     def _pause_time(self):
         self.s_time_delta += datetime.datetime.now() - self.start_time
@@ -161,7 +164,7 @@ class MusicPlayer(commands.Cog):
         await ctx.send('▶️ Resuming music')
 
     @music.command(help="Stops audio playback and clears the queue")
-    async def stop(self, ctx):
+    async def stop(self, ctx=None):
         if not await self.check_bot_voice_connected(ctx):
             return
         self.queue = []
@@ -169,9 +172,19 @@ class MusicPlayer(commands.Cog):
         self.voice_connection.stop()
         if ctx: await ctx.send('⏹️ Stopping music and clearing queue')
 
-    @music.command(help="Skips to a certain part of the video. NOT IMPLEMENTED YET")
-    async def seek(self, ctx):
-        pass
+    @music.command(help="Skips to a certain part of the video in seconds")
+    async def seek(self, ctx, time: int):
+        if not await self.check_bot_voice_connected(ctx):
+            return
+        if not self.voice_connection.is_playing() and not self.voice_connection.is_paused():
+            await ctx.send('Bot is not playing anything at the moment')
+            return
+        if time < 0 or time >= self.currently_playing_info['duration']:
+            await ctx.send('You cant seek for a timestamp less than 0 or above the length of the video')
+            return
+        self.voice_connection.pause()
+        self.play_audio(self.currently_playing_info, time_seconds=time)
+        await ctx.send(f'Skipping to {datetime.timedelta(seconds=time)} in the song')
 
     @music.command(help="Skips to the next in queue")
     async def skip(self, ctx):
@@ -237,6 +250,13 @@ class MusicPlayer(commands.Cog):
         else:
             print(f'An unexpected error occurred from the command {ctx.message.content}: {error}')
             await ctx.send('There was an error executing this command. Contact a developer if the problem persists')
+
+    @seek.error
+    async def seek_error(self, ctx, error):
+        if isinstance(error, MissingRequiredArgument):
+            await ctx.send('You need to provide a timestamp in seconds to seek to!')
+        elif isinstance(error, BadArgument):
+            await ctx.send('You can only seek in seconds')
 
     def cog_unload(self):
         # TODO: Find a way to disconnect bot when cog is unloaded without it being a coroutine
