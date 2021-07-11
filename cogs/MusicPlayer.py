@@ -103,7 +103,8 @@ class MusicPlayer(commands.Cog):
         else:
             return self.s_time_delta + (datetime.datetime.now() - self.start_time)
 
-    @commands.group(help="Music commands which lets the user play audio from youtube sources in a voice channel")
+    @commands.group(help="Music commands which lets the user play audio from youtube sources in a voice channel",
+                    aliases=['m'])
     @commands.check(user_is_in_voice)
     async def music(self, ctx):
         if ctx.invoked_subcommand is None:
@@ -111,7 +112,7 @@ class MusicPlayer(commands.Cog):
                            "'<prefix>help music' for list of music related commands")
 
     @music.command(help="Searches youtube for a video and plays the audio source or adds it to the queue"
-                        ". Usage: !play [search/link]")
+                        ". Usage: !play [search/link]", aliases=['p', 'search'])
     async def play(self, ctx, *user_input):
         if not user_input:
             await ctx.send('You need to provide a search term or a link to a youtube video')
@@ -203,7 +204,7 @@ class MusicPlayer(commands.Cog):
         embed = self._get_video_information_embed(self.currently_playing_info, time_stamp=self._get_time())
         await ctx.send(f'', embed=embed)
 
-    @music.command(help="Shows the audio queue. Usage: !queue [page number](optional)")
+    @music.command(help="Shows the audio queue. Usage: !queue [page number](optional)", aliases=['q'])
     async def queue(self, ctx, page: typing.Optional[int] = 1):
         if not await self.check_bot_voice_connected(ctx):
             return
