@@ -18,8 +18,9 @@ class GoogleImages(commands.Cog):
             raise Exception('SEARCH_ENGINE_ID not found in .env')
 
     @commands.command(help='Searches for an image and posts the first result', aliases=['g', 'img'])
-    async def google(self, ctx, search: str):
-        # TODO: implement error checking and handling (check for non-400 error messages)
+    async def google(self, ctx, *search):
+        # TODO: implement error checking and handling (check for non-200 error messages)
+        search = ' '.join(search)
         arguments = {'key': self.google_token, 'cx': self.google_engine_id, 'q': search,
                      'num': '1', 'searchType': 'image'}
         r = requests.get('https://www.googleapis.com/customsearch/v1?', params=arguments).json()
