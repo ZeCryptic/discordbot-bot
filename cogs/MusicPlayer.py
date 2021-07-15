@@ -50,7 +50,10 @@ class MusicPlayer(commands.Cog):
 
     def get_yt_video_info(self, search):
         with yt.YoutubeDL(yt_format_info) as yt_dl:
-            info = yt_dl.extract_info(f'ytsearch:{search}', download=False)['entries'][0]
+            try:
+                info = yt_dl.extract_info(f'ytsearch:{search}', download=False)['entries'][0]
+            except (IndexError, KeyError) as e:
+                info = None
             return info
 
     def play_audio(self, video_info, time_seconds: int = 0):
@@ -123,6 +126,9 @@ class MusicPlayer(commands.Cog):
             await self.join(ctx)
 
         video_info = self.get_yt_video_info(user_input)
+        if not video_info:
+            await ctx.send(f'Searched for `{user_input}` and got `0` results')
+            return
         video_title = video_info['title']
         await ctx.send(f'Searched for `{user_input}` and found:', embed=self._get_video_information_embed(video_info))
 
