@@ -20,6 +20,7 @@ class Badcomms(commands.Cog):
         return history.load_messages(guild_id)
 
     @commands.command(name="update")
+    @commands.is_owner()
     async def _find_user_ats(self, ctx):
 
         messages_dict = self.load_messages(ctx.guild.id)
@@ -29,16 +30,12 @@ class Badcomms(commands.Cog):
         members = ctx.guild.members
         for member in members:
             self.members_dict[member.id] = []
-        print(self.members_dict)
         for channel in messages_dict:
             for message in messages_dict[channel]['messages']:
                 if "@" in message["content"] and not message['content'].startswith(PREFIX):
-                    #print(message["content"])
-                    #print(message["created_at"])
-                    #print(type(message["created_at"]))
                     member = await converter.convert(ctx, message["author"])
                     await self.find_response(ctx, member.id, message["created_at"], messages_dict)
-                    #Send videre til å finne responsen
+
 
 
     async def find_response(self, ctx, member_id, time_sent, messages_dict):
@@ -51,14 +48,30 @@ class Badcomms(commands.Cog):
                         #print(time_sent, message["created_at"])
                         #print("Hei der")
                         difference = message["created_at"] - time_sent
-                        print("hello there", difference)
+                        self.members_dict[member_id].append(difference)
                         return
 
-    async def find_average_responsetime(self, ctx, member_id, response_time):
-        for member, average in self.members_dict.items():
-            if member == member_id:
-
-        print(self.members_dict)
+    @commands.command(name='find')
+    @commands.is_owner()
+    async def find_average_responsetime(self, ctx, member_id=None):
+        converter = MemberConverter()
+        if member_id is None:
+            member_id = str(ctx.author.id)
+        count = 0
+        first = True
+        for member, response_times in self.members_dict.items():
+            if str(member) in member_id:
+                for response_time in response_times:
+                    if first is True:
+                        average = response_time
+                        count += 1
+                        first = False
+                    else:
+                        count += 1
+                        average += response_time
+                average = average/count
+                tagged = await converter.convert(ctx, member_id)
+        await ctx.send(f"The average response time for {tagged.name} is {average}")
 
 
 def setup(bot):
