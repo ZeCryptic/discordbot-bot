@@ -33,8 +33,9 @@ class Badcomms(commands.Cog):
         for channel in messages_dict:
             for message in messages_dict[channel]['messages']:
                 if "@" in message["content"] and not message['content'].startswith(PREFIX):
-                    member = await converter.convert(ctx, message["author"])
+                    member = await converter.convert(ctx, message["author"][:-5])
                     await self.find_response(ctx, member.id, message["created_at"], messages_dict)
+        await ctx.send("Update complete")
 
 
 
@@ -42,7 +43,7 @@ class Badcomms(commands.Cog):
         converter = MemberConverter()
         for channel in messages_dict:
             for message in messages_dict[channel]['messages']:
-                member = await converter.convert(ctx, message["author"])
+                member = await converter.convert(ctx, message["author"][:-5])
                 if member.id == member_id:
                     if time_sent < message["created_at"]:
                         #print(time_sent, message["created_at"])
