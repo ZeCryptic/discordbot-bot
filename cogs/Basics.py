@@ -46,6 +46,8 @@ class Basics(commands.Cog):
             await ctx.send("Moved voice server to Japan")
             await channel.edit(rtc_region="europe")
             await ctx.send("Moved voice server to Europe")
+        else:
+            await ctx.send("You need to be in a voice channel to use this command")
 
 def setup(bot):
     bot.add_cog(Basics(bot))
