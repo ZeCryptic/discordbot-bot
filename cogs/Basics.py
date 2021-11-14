@@ -39,11 +39,13 @@ class Basics(commands.Cog):
 
     @commands.command(help="Changes voice channel region, and changes it back")
     async def refresh(self, ctx):
-        channel = ctx.author.voice.channel
-        await channel.edit(rtc_region="japan")
-        await ctx.send("Moved voice server to Japan")
-        await channel.edit(rtc_region="europe")
-        await ctx.send("Moved voice server to Europe")
+        if ctx.author.voice is not None:
+            channel = ctx.author.voice.channel
+
+            await channel.edit(rtc_region="japan")
+            await ctx.send("Moved voice server to Japan")
+            await channel.edit(rtc_region="europe")
+            await ctx.send("Moved voice server to Europe")
 
 def setup(bot):
     bot.add_cog(Basics(bot))
