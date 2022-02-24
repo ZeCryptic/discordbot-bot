@@ -77,7 +77,7 @@ class MusicPlayer(commands.Cog):
         embed = discord.Embed(title=info['title'], url=f'https://www.youtube.com/watch?v={info["id"]}')
         embed.set_image(url=f'http://img.youtube.com/vi/{info["id"]}/mqdefault.jpg')
         embed.set_footer(text=f'{duration} | ' \
-                              f'👍 {info["like_count"]} 👎 {info["dislike_count"]} | ' \
+                              f'👍 {info["like_count"]} 👎 | ' \
                               f'📈 {info["view_count"]}')
         if not time_stamp:
             return embed
@@ -233,7 +233,7 @@ class MusicPlayer(commands.Cog):
             info = self.queue[i]
             field_name = f'{i + 1}: `{info["title"]}`'
             field_value = f' {datetime.timedelta(seconds=info["duration"])} | ' \
-                          f'👍 {info["like_count"]} 👎 {info["dislike_count"]} | ' \
+                          f'👍 {info["like_count"]}  | ' \
                           f'📈 {info["view_count"]}'
             embed.add_field(name=field_name, value=field_value, inline=False)
         embed.set_footer(text=f'Page {page}/{pages}')
