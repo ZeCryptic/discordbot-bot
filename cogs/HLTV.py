@@ -62,6 +62,13 @@ class HLTVScraper(commands.Cog):
         self.matches = BeautifulSoup(html.read(), 'html.parser')
         self.matches_dict()
 
+    def download_live_match_page(self, url):
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
+        req = Request(url, headers=headers)
+        html = urlopen(req, timeout=10)
+        matchPage = BeautifulSoup(html.read(), 'html.parser')
+        return matchPage
+
     def matches_dict(self):
 
         self.matchInfo = {
@@ -142,6 +149,8 @@ class HLTVScraper(commands.Cog):
         'matchMeta': [],  # matchMeta
         'time': [],  # time its live, I dont need
         'url': [],  # url
+        'watchUrl': [],
+        'streamName': [],
         'eventName': [],  # eventName
         'score1' : "",  # Score is not gonna work atm
         'maps1' : "",  # Map score is not gonna work atm
@@ -152,11 +161,14 @@ class HLTVScraper(commands.Cog):
             liveMatches = live.find_all('div', {'class':'liveMatch'})
 
             for liveMatch in liveMatches:
+                matchPage = self.download_live_match_page(urljoin('https://www.hltv.org/matches', liveMatch.find('a', {'class': 'match a-reset'}).get("href")))
                 self.liveMatches['team1'].append(liveMatch.find('div', {'class':'matchTeams'}).find_all('div', {'class':'matchTeamName'})[0].text)
                 self.liveMatches['eventName'].append(liveMatch.find('div', {'class': 'matchEventName'}).text)
                 self.liveMatches['stars'].append(len(liveMatch.find_all('i', {'class': 'fa fa-star'})))
                 self.liveMatches['matchMeta'].append(liveMatch.find('div', {'class': 'matchMeta'}).text)
-                self.liveMatches['url'].append(urljoin('https://www.hltv.org/matches', liveMatch.find('a', {'class': 'match a-reset'}).get("href")))
+                self.liveMatches['url'].append(urljoin('https://www.hltv.org/matches', liveMatch.find('a', {'class': 'match a-reset'}.get("href"))))
+                self.liveMatches['watchUrl'].append(matchPage.find("a", {'aria-label':"Open stream on external site"}).get('href'))
+                self.liveMatches['streamName'].append(matchPage.find('div', {'class':'stream-box-embed'}).text)
                 self.liveMatches['team2'].append(liveMatch.find('div', {'class':'matchTeams'}).find_all('div', {'class':'matchTeamName'})[1].text)
 
 
@@ -194,7 +206,7 @@ class HLTVScraper(commands.Cog):
                       f"[HLTV page]({self.matchInfo[day]['url'][i]})", inline=False)
         return embed
 
-    def make_embed_live_matches(self, star=None): # Add så star gjer nokke
+    def make_embed_live_matches(self, star=None):
         #if self.liveMatches['team1'] == []:  # Trengst denna?
         self.download_matches()
         self.live_match_dict()
@@ -211,7 +223,8 @@ class HLTVScraper(commands.Cog):
             embed.add_field(
                 name=f":red_circle: Live  {self.liveMatches['team1'][i]} VS {self.liveMatches['team2'][i]}. {':star:' * self.liveMatches['stars'][i]}",
                 value=f"Format: {self.liveMatches['matchMeta'][i]}.\nTournament: {self.liveMatches['eventName'][i]}\n"
-                      f"[HLTV page]({self.liveMatches['url'][i]})", inline=False)
+                      f"[HLTV page]({self.liveMatches['url'][i]})\n"
+                      f"[Stream from {self.liveMatches['streamName'][i]}]({self.liveMatches['watchUrl'][i]})", inline=False)
 
         return embed
 
