@@ -175,25 +175,25 @@ class HLTVScraper(commands.Cog):
 
 
     @commands.command(name="show")
-    async def show_today_matches(self, ctx, stars=None):
+    async def show_today_matches(self, ctx, stars=1):
         await ctx.send(embed=self.make_embed_future_matches("day1info", stars))
 
     @commands.command(name="showTm")
-    async def show_tomorrow_matches(self, ctx, stars=None):
+    async def show_tomorrow_matches(self, ctx, stars=1):
         await ctx.send(embed=self.make_embed_future_matches("day2info", stars))
 
     @commands.command(name="showLive")
-    async def show_live_matches(self, ctx, stars=None):
+    async def show_live_matches(self, ctx, stars=1):
         await ctx.send(embed=self.make_embed_live_matches(stars))
 
-    def make_embed_future_matches(self, day, star=None):
+    def make_embed_future_matches(self, day, star):
         #if self.matchInfo[day]['team1'] == []:
         self.download_matches()
 
         embed = discord.Embed(
             title=f"Matches {self.matchInfo[day]['date'][0]}, {self.matchInfo[day]['date'][3]}-{self.matchInfo[day]['date'][2]}-{self.matchInfo[day]['date'][1]}",
             url="https://www.hltv.org/matches",
-            description=f"A list of CSGO matches", color=0xff0000)
+            description=f"Shows all csgo matches above {star} :star:", color=0xff0000)
 
         for i in range(len(self.matchInfo[day]['team1'])):
             if star is not None:
@@ -206,7 +206,7 @@ class HLTVScraper(commands.Cog):
                       f"[HLTV page]({self.matchInfo[day]['url'][i]})", inline=False)
         return embed
 
-    def make_embed_live_matches(self, star=None):
+    def make_embed_live_matches(self, star):
         #if self.liveMatches['team1'] == []:  # Trengst denna?
         self.download_matches()
         self.live_match_dict()
@@ -214,7 +214,7 @@ class HLTVScraper(commands.Cog):
         embed = discord.Embed(
             title=f":red_circle: Live matches",
             url="https://www.hltv.org/matches",
-            description=f"A list of live CSGO matches", color=0xff0000)
+            description=f"A list of live CSGO matches above {star} :star:", color=0xff0000)
 
         for i in range(len(self.liveMatches['team1'])):
             if star is not None:
